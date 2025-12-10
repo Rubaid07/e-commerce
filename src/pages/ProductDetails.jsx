@@ -50,10 +50,7 @@ const ProductDetails = () => {
 
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
   const productImages = product?.images || [
-    product?.image || `https://picsum.photos/600/600?random=${id}&product`,
-    `https://picsum.photos/600/600?random=${id + 1}&product`,
-    `https://picsum.photos/600/600?random=${id + 2}&product`,
-    `https://picsum.photos/600/600?random=${id + 3}&product`,
+    product?.image
   ];
 
   useEffect(() => {
@@ -419,11 +416,11 @@ const ProductDetails = () => {
                 <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
                   {product.category || "Fashion"}
                 </span>
-                {product.tags?.map(tag => (
-                  <span key={tag} className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs">
-                    {tag}
-                  </span>
-                ))}
+               {Array.isArray(product.tags) && product.tags.map(tag => (
+  <span key={tag} className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs">
+    {tag}
+  </span>
+))}
               </div>
 
               <div className="flex items-center gap-1">

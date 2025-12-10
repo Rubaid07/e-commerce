@@ -1,275 +1,160 @@
 // src/pages/AdminDashboard.jsx
-import { useEffect, useState } from "react";
-import axios from "axios";
-import { useAuth } from "../hooks/useAuth";
-import toast, { Toaster } from "react-hot-toast";
-import { Pencil, Trash2, Plus, X } from "lucide-react";
+import { useState } from "react";
+import { Toaster } from "react-hot-toast";
+import { 
+  Package, 
+  ShoppingCart, 
+  Users, 
+  DollarSign,
+  BarChart3,
+  Grid3x3,
+  ListOrdered,
+  Settings,
+  Shield
+} from "lucide-react";
+
+// Import Components
+import ProductManager from "../components/admin/ProductManager";
+import OrderManager from "../components/admin/OrderManager";
+import UserManager from "../components/admin/UserManager";
+import DashboardStats from "../components/admin/DashboardStats";
+import SalesChart from "../components/admin/SalesChart";
 
 const AdminDashboard = () => {
-  const [products, setProducts] = useState([]);
-  const [filtered, setFiltered] = useState([]);
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(0);
-  const perPage = 5;
+  const [activeTab, setActiveTab] = useState("dashboard");
+  
+  const tabs = [
+    { id: "dashboard", label: "Dashboard", icon: <BarChart3 className="w-5 h-5" /> },
+    { id: "products", label: "Products", icon: <Package className="w-5 h-5" /> },
+    { id: "orders", label: "Orders", icon: <ShoppingCart className="w-5 h-5" /> },
+    { id: "users", label: "Users", icon: <Users className="w-5 h-5" /> },
+    { id: "categories", label: "Categories", icon: <Grid3x3 className="w-5 h-5" /> },
+    { id: "settings", label: "Settings", icon: <Settings className="w-5 h-5" /> },
+  ];
 
-  const [form, setForm] = useState({
-    name: "",
-    price: "",
-    category: "",
-    image: "",
-  });
-  const [editId, setEditId] = useState(null);
-  const [showModal, setShowModal] = useState(false);
-
-  const { token } = useAuth();
-  const api = axios.create({
-    baseURL: "http://localhost:5000",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  // fetch
-  const fetchProducts = async () => {
-    try {
-      const { data } = await api.get("/api/products");
-      setProducts(data);
-      setFiltered(data);
-    } catch (e) {
-      toast.error("Failed to fetch products");
+  const renderContent = () => {
+    switch (activeTab) {
+      case "dashboard":
+        return (
+          <div className="space-y-6">
+            <DashboardStats />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <SalesChart />
+              <div className="bg-white rounded-xl shadow p-6">
+                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                  <ListOrdered className="w-5 h-5" />
+                  Recent Orders
+                </h3>
+                <OrderManager showAll={false} />
+              </div>
+            </div>
+          </div>
+        );
+      case "products":
+        return <ProductManager />;
+      case "orders":
+        return <OrderManager showAll={true} />;
+      case "users":
+        return <UserManager />;
+      case "categories":
+        return <CategoryManager />;
+      case "settings":
+        return <AdminSettings />;
+      default:
+        return <DashboardStats />;
     }
   };
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  // search
-  useEffect(() => {
-    const res = products.filter(
-      (p) =>
-        p.name.toLowerCase().includes(search.toLowerCase()) ||
-        p.category.toLowerCase().includes(search.toLowerCase())
-    );
-    setFiltered(res);
-    setPage(0);
-  }, [search, products]);
-
-  // pagination
-  const pageCount = Math.ceil(filtered.length / perPage);
-  const paginated = filtered.slice(page * perPage, (page + 1) * perPage);
-
-  // create / update
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (editId) {
-        await api.put(`/api/products/${editId}`, form);
-        toast.success("Updated successfully");
-      } else {
-        await api.post("/api/products", form);
-        toast.success("Added successfully");
-      }
-      setShowModal(false);
-      resetForm();
-      fetchProducts();
-    } catch (err) {
-      toast.error("Operation failed");
-    }
-  };
-
-  // delete
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this product?")) return;
-    try {
-      await api.delete(`/api/products/${id}`);
-      toast.success("Deleted");
-      fetchProducts();
-    } catch (err) {
-      toast.error("Delete failed");
-    }
-  };
-
-  // helpers
-  const resetForm = () => {
-    setForm({ name: "", price: "", category: "", image: "" });
-    setEditId(null);
-  };
-
-  const openEdit = (p) => {
-    setForm({ name: p.name, price: p.price, category: p.category, image: p.image || "" });
-    setEditId(p._id);
-    setShowModal(true);
-  };
-
-  const closeModal = () => {
-    setShowModal(false);
-    resetForm();
-  };
-
-  // image preview
-  const previewSrc = form.image || "https://picsum.photos/400/300?grayscale";
 
   return (
-    <div className="py-8 max-w-10/12 mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Toaster position="top-right" />
-
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-        >
-          <Plus size={18} /> Add Product
-        </button>
-      </div>
-
-      {/* Search */}
-      <div className="mb-6">
-        <input
-          type="text"
-          placeholder="Search by name/category"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md border px-4 py-2 rounded"
-        />
-      </div>
-
-      {/* Table */}
-      <div className="bg-white rounded shadow overflow-x-auto">
-        <table className="w-full text-left">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-3">Image</th>
-              <th className="p-3">Name</th>
-              <th className="p-3">Price</th>
-              <th className="p-3">Category</th>
-              <th className="p-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginated.map((p) => (
-              <tr key={p._id} className="border-b hover:bg-gray-50">
-                <td className="p-3">
-                  <img
-                    src={p.image || "https://picsum.photos/60/60"}
-                    alt={p.name}
-                    className="w-14 h-14 object-cover rounded"
-                  />
-                </td>
-                <td className="p-3 font-medium">{p.name}</td>
-                <td className="p-3">${Number(p.price).toFixed(2)}</td>
-                <td className="p-3">{p.category}</td>
-                <td className="p-3 flex gap-2">
-                  <button
-                    onClick={() => openEdit(p)}
-                    className="text-blue-600 hover:underline flex items-center gap-1"
-                  >
-                    <Pencil size={16} /> Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(p._id)}
-                    className="text-red-600 hover:underline flex items-center gap-1"
-                  >
-                    <Trash2 size={16} /> Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      {pageCount > 1 && (
-        <div className="flex justify-center gap-2 mt-6">
-          {[...Array(pageCount)].map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setPage(i)}
-              className={`px-3 py-1 rounded ${i === page ? "bg-black text-white" : "bg-gray-200 hover:bg-gray-300"
-                }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-2xl relative">
-            <button
-              onClick={closeModal}
-              className="absolute top-4 right-4 text-gray-500 hover:text-black"
-            >
-              <X size={24} />
-            </button>
-            <h2 className="text-2xl font-bold mb-4">
-              {editId ? "Edit Product" : "Add New Product"}
-            </h2>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input
-                type="text"
-                placeholder="Product Name"
-                required
-                className="w-full border px-4 py-2 rounded"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-              <input
-                type="number"
-                placeholder="Price"
-                required
-                className="w-full border px-4 py-2 rounded"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
-              />
-              <input
-                type="text"
-                placeholder="Category"
-                required
-                className="w-full border px-4 py-2 rounded"
-                value={form.category}
-                onChange={(e) => setForm({ ...form, category: e.target.value })}
-              />
-              <input
-                type="text"
-                placeholder="Image URL"
-                className="w-full border px-4 py-2 rounded"
-                value={form.image}
-                onChange={(e) => setForm({ ...form, image: e.target.value })}
-              />
-              {/* Image Preview */}
-              <div className="flex justify-center">
-                <img
-                  src={previewSrc}
-                  alt="preview"
-                  className="h-32 object-cover rounded border"
-                />
+      
+      {/* Header */}
+      <div className="bg-white border-b shadow-sm">
+        <div className="max-w-10/12 mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
+                <Shield className="w-6 h-6 text-white" />
               </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  className="flex-1 bg-green-600 text-white py-2 rounded hover:bg-green-700"
-                >
-                  {editId ? "Update" : "Add"}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="flex-1 bg-gray-300 py-2 rounded hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+                <p className="text-sm text-gray-600">Manage your e-commerce platform</p>
               </div>
-            </form>
+            </div>
+            <div className="text-sm text-gray-600">
+              Last updated: {new Date().toLocaleDateString()}
+            </div>
           </div>
         </div>
-      )}
+      </div>
+
+      <div className="max-w-10/12 mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Sidebar */}
+          <div className="lg:w-1/5">
+            <div className="bg-white rounded-xl shadow-sm border p-4">
+              <nav className="space-y-2">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-all ${
+                      activeTab === tab.id
+                        ? "bg-gradient-to-r from-purple-50 to-blue-50 text-purple-700 border-l-4 border-purple-600"
+                        : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    {tab.icon}
+                    <span className="font-medium">{tab.label}</span>
+                  </button>
+                ))}
+              </nav>
+              
+              {/* Quick Stats */}
+              <div className="mt-8 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg border">
+                <h4 className="font-semibold text-gray-900 mb-3">Quick Stats</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Total Revenue</span>
+                    <span className="font-bold text-green-600">$12,450</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Pending Orders</span>
+                    <span className="font-bold text-orange-600">8</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Low Stock</span>
+                    <span className="font-bold text-red-600">3</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="lg:w-4/5">
+            {renderContent()}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
+
+// Placeholder Components
+const CategoryManager = () => (
+  <div className="bg-white rounded-xl shadow p-6">
+    <h2 className="text-xl font-bold mb-6">Category Management</h2>
+    <p className="text-gray-600">Category management coming soon...</p>
+  </div>
+);
+
+const AdminSettings = () => (
+  <div className="bg-white rounded-xl shadow p-6">
+    <h2 className="text-xl font-bold mb-6">Settings</h2>
+    <p className="text-gray-600">Settings management coming soon...</p>
+  </div>
+);
 
 export default AdminDashboard;
