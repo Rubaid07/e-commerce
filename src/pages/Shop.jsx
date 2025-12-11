@@ -3,11 +3,11 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router";
 import axios from "axios";
 import ProductSkeleton from "../components/ProductSkeleton";
-import { 
-  Search, 
-  Filter, 
-  DollarSign, 
-  CheckCircle, 
+import {
+  Search,
+  Filter,
+  DollarSign,
+  CheckCircle,
   XCircle,
   ChevronDown,
   ChevronUp,
@@ -47,10 +47,10 @@ const Shop = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get("http://localhost:5000/api/products");
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products`);
         const data = res.data;
         setProducts(data);
-        
+
         // Extract unique categories with counts
         const categoryMap = data.reduce((acc, p) => {
           if (p.category) {
@@ -58,11 +58,11 @@ const Shop = () => {
           }
           return acc;
         }, {});
-        
+
         const categoryList = Object.entries(categoryMap)
-          .sort(([,a], [,b]) => b - a)
+          .sort(([, a], [, b]) => b - a)
           .map(([cat]) => cat);
-        
+
         setCategories(["All", ...categoryList, "Sale", "New Arrivals", "Best Sellers"]);
       } catch (err) {
         // console.error("Failed to fetch products:", err);
@@ -71,7 +71,7 @@ const Shop = () => {
         setLoading(false);
       }
     };
-    
+
     fetchProducts();
   }, []);
 
@@ -87,12 +87,12 @@ const Shop = () => {
   // filter function
   const applyFilters = useCallback(() => {
     if (!products.length) return [];
-    
+
     let filtered = [...products];
-    
+
     // Category filter (including special categories)
     if (category !== "All") {
-      switch(category) {
+      switch (category) {
         case "Sale":
           filtered = filtered.filter(p => p.discount || p.sale || p.price < 100);
           break;
@@ -112,26 +112,26 @@ const Shop = () => {
           filtered = filtered.filter(p => p.category === category);
       }
     }
-    
+
     // Price filter
     filtered = filtered.filter(p => Number(p.price) <= priceMax);
-    
+
     // Stock filter
     if (inStock) {
       filtered = filtered.filter(p => p.inStock === true);
     }
-    
+
     // Search filter
     if (search.trim()) {
       const searchTerm = search.toLowerCase().trim();
-      filtered = filtered.filter(p => 
+      filtered = filtered.filter(p =>
         p.name.toLowerCase().includes(searchTerm) ||
         (p.description && p.description.toLowerCase().includes(searchTerm)) ||
         (p.category && p.category.toLowerCase().includes(searchTerm)) ||
         (p.tags && p.tags.some(tag => tag.toLowerCase().includes(searchTerm)))
       );
     }
-    
+
     return filtered;
   }, [products, category, priceMax, inStock, search]);
 
@@ -166,7 +166,7 @@ const Shop = () => {
 
   // Get category icon
   const getCategoryIcon = (cat) => {
-    switch(cat) {
+    switch (cat) {
       case "Men": return <Tag className="w-4 h-4" />;
       case "Women": return <Tag className="w-4 h-4" />;
       case "Electronics": return <Zap className="w-4 h-4" />;
@@ -182,13 +182,13 @@ const Shop = () => {
     total: products.length,
     filtered: filteredProducts.length,
     inStockCount: products.filter(p => p.inStock).length,
-    avgPrice: products.length > 0 
+    avgPrice: products.length > 0
       ? (products.reduce((sum, p) => sum + Number(p.price), 0) / products.length).toFixed(2)
       : 0,
-    minPrice: products.length > 0 
+    minPrice: products.length > 0
       ? Math.min(...products.map(p => Number(p.price)))
       : 0,
-    maxPrice: products.length > 0 
+    maxPrice: products.length > 0
       ? Math.max(...products.map(p => Number(p.price)))
       : 0,
     totalValue: products.reduce((sum, p) => sum + Number(p.price), 0).toFixed(2),
@@ -197,7 +197,7 @@ const Shop = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header with Fixed Navbar Offset */}
-      <div 
+      <div
         className="bg-white shadow-sm border-b"
       >
         <div className="lg:max-w-10/12 mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -208,7 +208,7 @@ const Shop = () => {
                 Discover our curated collection of premium products
               </p>
             </div>
-            
+
             {/* Search Bar */}
             <div className="relative w-full md:w-auto">
               <div className="relative">
@@ -239,7 +239,7 @@ const Shop = () => {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Fixed Sidebar - Now properly positioned */}
           <div className="lg:w-1/4">
-            <div 
+            <div
               ref={sidebarRef}
               className="bg-white rounded-xl shadow-sm border overflow-y-auto"
               style={{
@@ -274,40 +274,39 @@ const Shop = () => {
                       <Tag className="w-4 h-4" />
                       Categories
                     </label>
-                    {expandedFilters.category ? 
-                      <ChevronUp className="w-5 h-5 text-gray-400" /> : 
+                    {expandedFilters.category ?
+                      <ChevronUp className="w-5 h-5 text-gray-400" /> :
                       <ChevronDown className="w-5 h-5 text-gray-400" />
                     }
                   </button>
-                  
+
                   {expandedFilters.category && (
                     <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                       {categories.map((c) => (
                         <button
                           key={c}
                           onClick={() => setCategory(c)}
-                          className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-all ${
-                            category === c
+                          className={`flex items-center justify-between w-full px-4 py-3 rounded-lg transition-all ${category === c
                               ? "bg-black text-white shadow-md"
                               : "bg-gray-50 hover:bg-gray-100 text-gray-700 hover:shadow-sm"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center gap-3">
                             {getCategoryIcon(c)}
                             <span>{c}</span>
                           </div>
                           <span className="text-sm opacity-75 bg-white/20 px-2 py-1 rounded">
-                            {c === "All" 
-                              ? products.length 
-                              : c === "Sale" 
+                            {c === "All"
+                              ? products.length
+                              : c === "Sale"
                                 ? products.filter(p => p.discount || p.sale).length
                                 : c === "New Arrivals"
                                   ? products.filter(p => {
-                                      const date = new Date(p.createdAt || Date.now());
-                                      const diffTime = Math.abs(Date.now() - date);
-                                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                      return diffDays <= 30;
-                                    }).length
+                                    const date = new Date(p.createdAt || Date.now());
+                                    const diffTime = Math.abs(Date.now() - date);
+                                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                    return diffDays <= 30;
+                                  }).length
                                   : c === "Best Sellers"
                                     ? products.filter(p => p.rating >= 4).length
                                     : products.filter(p => p.category === c).length
@@ -329,12 +328,12 @@ const Shop = () => {
                       <DollarSign className="w-4 h-4" />
                       Price Range
                     </label>
-                    {expandedFilters.price ? 
-                      <ChevronUp className="w-5 h-5 text-gray-400" /> : 
+                    {expandedFilters.price ?
+                      <ChevronUp className="w-5 h-5 text-gray-400" /> :
                       <ChevronDown className="w-5 h-5 text-gray-400" />
                     }
                   </button>
-                  
+
                   {expandedFilters.price && (
                     <>
                       <div className="mb-4">
@@ -355,18 +354,17 @@ const Shop = () => {
                           <span>${stats.maxPrice}</span>
                         </div>
                       </div>
-                      
+
                       {/* Quick Price Filters */}
                       <div className="grid grid-cols-2 gap-2 mt-4">
                         {[50, 100, 500, 1000].map(price => (
                           <button
                             key={price}
                             onClick={() => setPriceMax(price)}
-                            className={`px-3 py-2 text-sm rounded-lg transition ${
-                              priceMax === price
+                            className={`px-3 py-2 text-sm rounded-lg transition ${priceMax === price
                                 ? 'bg-black text-white'
                                 : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                            }`}
+                              }`}
                           >
                             Under ${price}
                           </button>
@@ -386,12 +384,12 @@ const Shop = () => {
                       <CheckCircle className="w-4 h-4" />
                       Availability
                     </label>
-                    {expandedFilters.availability ? 
-                      <ChevronUp className="w-5 h-5 text-gray-400" /> : 
+                    {expandedFilters.availability ?
+                      <ChevronUp className="w-5 h-5 text-gray-400" /> :
                       <ChevronDown className="w-5 h-5 text-gray-400" />
                     }
                   </button>
-                  
+
                   {expandedFilters.availability && (
                     <>
                       <label className="flex items-center justify-between cursor-pointer group">
@@ -426,12 +424,12 @@ const Shop = () => {
                       <Shield className="w-4 h-4" />
                       Features
                     </label>
-                    {expandedFilters.features ? 
-                      <ChevronUp className="w-5 h-5 text-gray-400" /> : 
+                    {expandedFilters.features ?
+                      <ChevronUp className="w-5 h-5 text-gray-400" /> :
                       <ChevronDown className="w-5 h-5 text-gray-400" />
                     }
                   </button>
-                  
+
                   {expandedFilters.features && (
                     <div className="space-y-3">
                       <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer">
@@ -493,11 +491,11 @@ const Shop = () => {
                   </p>
                 )}
               </div>
-              
+
               <div className="flex items-center gap-4">
                 <span className="text-sm text-gray-600">
-                  {stats.filtered === 0 ? "No products found" : 
-                   `${stats.filtered} product${stats.filtered !== 1 ? 's' : ''} found`}
+                  {stats.filtered === 0 ? "No products found" :
+                    `${stats.filtered} product${stats.filtered !== 1 ? 's' : ''} found`}
                 </span>
               </div>
             </div>
@@ -562,8 +560,8 @@ const Shop = () => {
                 {filteredProducts.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredProducts.map((p) => (
-                      <Link 
-                        key={p._id} 
+                      <Link
+                        key={p._id}
                         to={`/product/${p._id}`}
                         className="group block focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 rounded-xl"
                       >
@@ -580,11 +578,10 @@ const Shop = () => {
                               }}
                             />
                             {/* Stock Badge */}
-                            <span className={`absolute top-3 left-3 text-xs font-semibold px-3 py-1.5 rounded-full ${
-                              p.inStock 
-                                ? "bg-green-100 text-green-800 border border-green-200" 
+                            <span className={`absolute top-3 left-3 text-xs font-semibold px-3 py-1.5 rounded-full ${p.inStock
+                                ? "bg-green-100 text-green-800 border border-green-200"
                                 : "bg-red-100 text-red-800 border border-red-200"
-                            }`}>
+                              }`}>
                               {p.inStock ? "In Stock" : "Out of Stock"}
                             </span>
                             {/* Sale Badge */}
@@ -594,7 +591,7 @@ const Shop = () => {
                               </span>
                             )}
                           </div>
-                          
+
                           {/* Product Info */}
                           <div className="p-5">
                             <div className="flex justify-between items-start mb-2">
@@ -612,20 +609,20 @@ const Shop = () => {
                                 </span>
                               </div>
                             </div>
-                            
+
                             {p.category && (
                               <p className="text-sm text-gray-500 mb-2 flex items-center gap-1">
                                 <Tag className="w-3 h-3" />
                                 {p.category}
                               </p>
                             )}
-                            
+
                             {p.description && (
                               <p className="text-gray-600 text-sm line-clamp-2 mb-4">
                                 {p.description}
                               </p>
                             )}
-                            
+
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1">
                                 <Star className="w-4 h-4 text-yellow-500 fill-current" />

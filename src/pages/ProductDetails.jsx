@@ -39,7 +39,7 @@ const ProductDetails = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
-  
+
   // Wishlist states
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [wishlistItemId, setWishlistItemId] = useState(null);
@@ -59,7 +59,7 @@ const ProductDetails = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get(`http://localhost:5000/api/products/${id}`);
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products/${id}`);
         setProduct(res.data);
 
         // Fetch related products
@@ -97,9 +97,9 @@ const ProductDetails = () => {
 
       try {
         // console.log("Checking wishlist for product:", product._id);
-        
+
         const response = await axios.get(
-          `http://localhost:5000/api/wishlist/check/${product._id}`,
+          `${import.meta.env.VITE_API_BASE_URL}/api/wishlist/check/${product._id}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -107,13 +107,13 @@ const ProductDetails = () => {
             }
           }
         );
-        
+
         // console.log("Wishlist check result:", response.data);
-        
+
         // Update state based on API response
         setIsWishlisted(response.data.exists);
         setWishlistItemId(response.data.itemId);
-        
+
       } catch (error) {
         // console.error("Error checking wishlist:", error.response?.status, error.response?.data);
         setIsWishlisted(false);
@@ -127,7 +127,7 @@ const ProductDetails = () => {
   const fetchRelatedProducts = async (category, excludeId) => {
     setRelatedLoading(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/products?category=${category}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products?category=${category}`);
       const filtered = res.data.filter(p => p._id !== excludeId).slice(0, 4);
       setRelatedProducts(filtered);
     } catch (err) {
@@ -191,53 +191,53 @@ const ProductDetails = () => {
         // REMOVE FROM WISHLIST
 
         // console.log("Removing from wishlist, itemId:", wishlistItemId);
-        
-        await axios.delete(`http://localhost:5000/api/wishlist/${wishlistItemId}`, {
-          headers: { 
+
+        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/wishlist/${wishlistItemId}`, {
+          headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
-        
+
         setIsWishlisted(false);
         setWishlistItemId(null);
         toast.success("Removed from wishlist");
-        
+
       } else {
         // ADD TO WISHLIST
-        
+
         // console.log("Adding to wishlist, productId:", product._id);
-        
+
         const response = await axios.post(
-          "http://localhost:5000/api/wishlist",
+          `${import.meta.env.VITE_API_BASE_URL}/api/wishlist`,
           { productId: product._id },
-          { 
-            headers: { 
+          {
+            headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
-            } 
+            }
           }
         );
-        
-        
+
+
         setIsWishlisted(true);
         setWishlistItemId(response.data._id);
         toast.success("Added to wishlist!");
       }
-      
+
     } catch (error) {
       // console.error("Wishlist error:", error);
       toast.error(error.response?.data?.message || "Failed to update wishlist");
-      
+
       // Re-check from server
       try {
         const response = await axios.get(
-          `http://localhost:5000/api/wishlist/check/${product._id}`,
-          { 
-            headers: { 
+          `${import.meta.env.VITE_API_BASE_URL}/api/wishlist/check/${product._id}`,
+          {
+            headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
-            } 
+            }
           }
         );
         setIsWishlisted(response.data.exists);
@@ -375,11 +375,10 @@ const ProductDetails = () => {
                 <button
                   key={idx}
                   onClick={() => setSelectedImage(idx)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                    selectedImage === idx
+                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${selectedImage === idx
                       ? "border-black ring-2 ring-black/20"
                       : "border-gray-200 hover:border-gray-400"
-                  }`}
+                    }`}
                 >
                   <img
                     src={img || "https://via.placeholder.com/80x80?text=Thumbnail"}
@@ -399,13 +398,11 @@ const ProductDetails = () => {
               <button
                 onClick={toggleWishlist}
                 disabled={wishlistLoading}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
-                  wishlistLoading ? 'opacity-70 cursor-wait' : ''
-                } ${
-                  isWishlisted
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${wishlistLoading ? 'opacity-70 cursor-wait' : ''
+                  } ${isWishlisted
                     ? "bg-red-50 text-red-600 border border-red-200"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                  }`}
               >
                 {wishlistLoading ? (
                   <RefreshCw className="w-5 h-5 animate-spin" />
@@ -452,11 +449,10 @@ const ProductDetails = () => {
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    className={`w-4 h-4 ${
-                      star <= Math.floor(product.rating || 4)
+                    className={`w-4 h-4 ${star <= Math.floor(product.rating || 4)
                         ? "text-yellow-500 fill-current"
                         : "text-gray-300"
-                    }`}
+                      }`}
                   />
                 ))}
                 <span className="text-sm text-gray-600 ml-1">
@@ -546,13 +542,12 @@ const ProductDetails = () => {
                       key={s}
                       onClick={() => isAvailable && setSize(s)}
                       disabled={!isAvailable}
-                      className={`px-4 py-3 rounded-lg border transition-all ${
-                        size === s
+                      className={`px-4 py-3 rounded-lg border transition-all ${size === s
                           ? "bg-black text-white border-black"
                           : isAvailable
-                          ? "border-gray-300 hover:border-black hover:bg-gray-50"
-                          : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                      }`}
+                            ? "border-gray-300 hover:border-black hover:bg-gray-50"
+                            : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                        }`}
                     >
                       {s}
                       {!isAvailable && (
@@ -588,9 +583,8 @@ const ProductDetails = () => {
 
                 <div className="flex-1">
                   <p
-                    className={`text-sm flex items-center gap-2 ${
-                      product.inStock ? "text-green-600" : "text-red-600"
-                    }`}
+                    className={`text-sm flex items-center gap-2 ${product.inStock ? "text-green-600" : "text-red-600"
+                      }`}
                   >
                     <CheckCircle className="w-4 h-4" />
                     {product.inStock

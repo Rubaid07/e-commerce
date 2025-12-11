@@ -17,15 +17,15 @@ const Newsletter = () => {
     setLoading(true);
     // Simulate API call
     setTimeout(() => {
-      toast.success(
-        <div className="flex items-center gap-3">
-          <Gift className="w-5 h-5 text-green-500" />
-          <div>
-            <p className="font-semibold">Welcome to Realm Wear!</p>
-            <p className="text-sm text-gray-600">Check your email for 15% off coupon</p>
-          </div>
-        </div>
-      );
+      // toast.success(
+      //   <div className="flex items-center gap-3">
+      //     <Gift className="w-5 h-5 text-green-500" />
+      //     <div>
+      //       <p className="font-semibold">Welcome to Realm Wear!</p>
+      //       <p className="text-sm text-gray-600">Check your email for 15% off coupon</p>
+      //     </div>
+      //   </div>
+      // );
       setEmail("");
       setLoading(false);
     }, 1000);

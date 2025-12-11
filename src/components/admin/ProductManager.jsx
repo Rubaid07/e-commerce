@@ -3,18 +3,18 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../../hooks/useAuth";
 import toast from "react-hot-toast";
-import { 
-  Search, 
-  Plus, 
-  Filter, 
-  Download, 
+import {
+  Search,
+  Plus,
+  Filter,
+  Download,
   Upload,
   Eye,
   EyeOff,
   TrendingUp,
   Tag,
-  Package, 
-  DollarSign 
+  Package,
+  DollarSign
 } from "lucide-react";
 import ProductModal from "./ProductModal";
 import ProductTable from "./ProductTable";
@@ -40,11 +40,11 @@ const ProductManager = () => {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:5000/api/products");
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products`);
       const data = response.data;
       setProducts(data);
       setFilteredProducts(data);
-      
+
       // Extract unique categories
       const uniqueCategories = [...new Set(data.map(p => p.category).filter(Boolean))];
       setCategories(uniqueCategories);
@@ -111,7 +111,7 @@ const ProductManager = () => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/products/${productId}`, {
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/products/${productId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.success("Product deleted successfully");
@@ -123,7 +123,7 @@ const ProductManager = () => {
 
   const handleToggleStock = async (productId, currentStatus) => {
     try {
-      await axios.put(`http://localhost:5000/api/products/${productId}`, {
+      await axios.put(`${import.meta.env.VITE_API_BASE_URL}/api/products/${productId}`, {
         inStock: !currentStatus
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -184,7 +184,7 @@ const ProductManager = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-xl shadow-sm border p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -196,7 +196,7 @@ const ProductManager = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-xl shadow-sm border p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -208,7 +208,7 @@ const ProductManager = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-xl shadow-sm border p-4">
           <div className="flex items-center justify-between">
             <div>

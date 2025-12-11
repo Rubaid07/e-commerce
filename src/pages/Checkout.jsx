@@ -8,17 +8,17 @@ import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
-import { 
-  Loader, 
-  ShoppingBag, 
-  CreditCard, 
-  Truck, 
-  MapPin, 
-  User, 
-  Mail, 
-  Phone, 
-  Minus, 
-  Plus, 
+import {
+  Loader,
+  ShoppingBag,
+  CreditCard,
+  Truck,
+  MapPin,
+  User,
+  Mail,
+  Phone,
+  Minus,
+  Plus,
   Trash2,
   ShieldCheck,
   Package,
@@ -66,7 +66,7 @@ const Checkout = () => {
     handleSubmit,
     formState: { errors },
     setValue,
-  } = useForm({ 
+  } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
       email: currentUser?.email || "",
@@ -87,13 +87,13 @@ const Checkout = () => {
   const onSubmit = async (data) => {
     setLoading(true);
     const loadingToast = toast.loading("Processing your order...");
-    
+
     try {
       await axios.post(
-        "http://localhost:5000/api/orders",
-        { 
-          ...data, 
-          items, 
+        `${import.meta.env.VITE_API_BASE_URL}/api/orders`,
+        {
+          ...data,
+          items,
           subtotal: total.toFixed(2),
           shipping: shippingFee.toFixed(2),
           tax: tax.toFixed(2),
@@ -135,8 +135,8 @@ const Checkout = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-10 px-4 sm:px-6 lg:px-8">
-      <Toaster 
-        position="top-right" 
+      <Toaster
+        position="top-right"
         toastOptions={{
           duration: 4000,
           style: {
@@ -145,7 +145,7 @@ const Checkout = () => {
           },
         }}
       />
-      
+
       <div className="lg:max-w-10/12 mx-auto">
         {/* Progress Steps */}
         <div className="mb-8">
@@ -153,19 +153,17 @@ const Checkout = () => {
             {steps.map((step, index) => (
               <div key={step.number} className="flex items-center">
                 <div className={`flex flex-col items-center ${activeStep >= step.number ? 'text-black' : 'text-gray-400'}`}>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all ${
-                    activeStep >= step.number 
-                      ? 'bg-black text-white shadow-md' 
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 transition-all ${activeStep >= step.number
+                      ? 'bg-black text-white shadow-md'
                       : 'bg-gray-200 text-gray-400'
-                  }`}>
+                    }`}>
                     {step.icon}
                   </div>
                   <span className="text-sm font-medium hidden sm:block">{step.label}</span>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={`w-16 h-0.5 mx-4 sm:mx-8 ${
-                    activeStep > step.number ? 'bg-black' : 'bg-gray-300'
-                  }`} />
+                  <div className={`w-16 h-0.5 mx-4 sm:mx-8 ${activeStep > step.number ? 'bg-black' : 'bg-gray-300'
+                    }`} />
                 )}
               </div>
             ))}
@@ -385,16 +383,16 @@ const Checkout = () => {
                 {items.map((item) => (
                   <div key={`${item._id}-${item.size}`} className="flex gap-4 items-center group py-4">
                     <div className="relative">
-                      <img 
-                        src={item.image} 
-                        alt={item.name} 
+                      <img
+                        src={item.image}
+                        alt={item.name}
                         className="w-20 h-20 object-cover rounded-lg"
                       />
                       <div className="absolute -top-2 -right-2 w-6 h-6 bg-black text-white text-xs rounded-full flex items-center justify-center">
                         {item.qty}
                       </div>
                     </div>
-                    
+
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900 line-clamp-1">{item.name}</h3>
                       <p className="text-sm text-gray-600">Size: {item.size}</p>
@@ -409,7 +407,7 @@ const Checkout = () => {
                       >
                         <Minus className="w-4 h-4" />
                       </button>
-                      
+
                       <button
                         onClick={() => removeItem(item._id, item.size)}
                         className="w-8 h-8 flex items-center justify-center border border-red-200 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition opacity-0 group-hover:opacity-100"
@@ -417,7 +415,7 @@ const Checkout = () => {
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                      
+
                       <button
                         onClick={() => handleQuantityChange(item._id, item.size, item.qty + 1)}
                         className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-lg hover:bg-gray-100 transition"

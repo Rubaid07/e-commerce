@@ -3,12 +3,12 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../../hooks/useAuth";
 import toast from "react-hot-toast";
-import { 
-  Search, 
-  Filter, 
-  Download, 
-  Package, 
-  Truck, 
+import {
+  Search,
+  Filter,
+  Download,
+  Package,
+  Truck,
   CheckCircle,
   Clock,
   AlertCircle,
@@ -38,7 +38,7 @@ const OrderManager = ({ showAll = true }) => {
   const [showStats, setShowStats] = useState(true);
 
   const api = axios.create({
-    baseURL: "http://localhost:5000",
+    baseURL: import.meta.env.VITE_API_BASE_URL,
     headers: { Authorization: `Bearer ${token}` }
   });
 
@@ -83,7 +83,7 @@ const OrderManager = ({ showAll = true }) => {
           (order.firstName && order.firstName.toLowerCase().includes(searchLower)) ||
           (order.lastName && order.lastName.toLowerCase().includes(searchLower)) ||
           (order.phone && order.phone.includes(searchQuery)) ||
-          (order.items && order.items.some(item => 
+          (order.items && order.items.some(item =>
             item.name && item.name.toLowerCase().includes(searchLower)
           ))
         );
@@ -99,8 +99,8 @@ const OrderManager = ({ showAll = true }) => {
     if (dateFilter !== "all") {
       const now = new Date();
       let startDate = new Date();
-      
-      switch(dateFilter) {
+
+      switch (dateFilter) {
         case "today":
           startDate.setHours(0, 0, 0, 0);
           break;
@@ -114,7 +114,7 @@ const OrderManager = ({ showAll = true }) => {
           startDate.setFullYear(now.getFullYear() - 1);
           break;
       }
-      
+
       filtered = filtered.filter(order => {
         const orderDate = new Date(order.createdAt);
         return orderDate >= startDate;
@@ -131,40 +131,40 @@ const OrderManager = ({ showAll = true }) => {
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      pending: { 
-        color: "bg-yellow-100 text-yellow-800", 
+      pending: {
+        color: "bg-yellow-100 text-yellow-800",
         icon: <Clock className="w-4 h-4" />,
         label: "Pending"
       },
-      confirmed: { 
-        color: "bg-blue-100 text-blue-800", 
+      confirmed: {
+        color: "bg-blue-100 text-blue-800",
         icon: <Package className="w-4 h-4" />,
         label: "Confirmed"
       },
-      processing: { 
-        color: "bg-purple-100 text-purple-800", 
+      processing: {
+        color: "bg-purple-100 text-purple-800",
         icon: <Package className="w-4 h-4" />,
         label: "Processing"
       },
-      shipped: { 
-        color: "bg-indigo-100 text-indigo-800", 
+      shipped: {
+        color: "bg-indigo-100 text-indigo-800",
         icon: <Truck className="w-4 h-4" />,
         label: "Shipped"
       },
-      delivered: { 
-        color: "bg-green-100 text-green-800", 
+      delivered: {
+        color: "bg-green-100 text-green-800",
         icon: <CheckCircle className="w-4 h-4" />,
         label: "Delivered"
       },
-      cancelled: { 
-        color: "bg-red-100 text-red-800", 
+      cancelled: {
+        color: "bg-red-100 text-red-800",
         icon: <AlertCircle className="w-4 h-4" />,
         label: "Cancelled"
       }
     };
 
     const config = statusConfig[status] || statusConfig.pending;
-    
+
     return (
       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${config.color}`}>
         {config.icon}
@@ -189,7 +189,7 @@ const OrderManager = ({ showAll = true }) => {
 
   const deleteOrder = async (orderId) => {
     if (!window.confirm("Are you sure you want to delete this order?")) return;
-    
+
     try {
       await api.delete(`/api/orders/${orderId}`);
       toast.success("Order deleted successfully");
@@ -207,12 +207,12 @@ const OrderManager = ({ showAll = true }) => {
   };
 
   const exportOrders = () => {
-    const csvContent = "data:text/csv;charset=utf-8," 
+    const csvContent = "data:text/csv;charset=utf-8,"
       + "Order ID,Date,Customer,Email,Phone,Total,Status\n"
-      + orders.map(order => 
-          `"${order._id}","${new Date(order.createdAt).toLocaleDateString()}","${order.firstName} ${order.lastName}","${order.email}","${order.phone}","${order.total}","${order.status || 'pending'}"`
-        ).join("\n");
-    
+      + orders.map(order =>
+        `"${order._id}","${new Date(order.createdAt).toLocaleDateString()}","${order.firstName} ${order.lastName}","${order.email}","${order.phone}","${order.total}","${order.status || 'pending'}"`
+      ).join("\n");
+
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -283,7 +283,7 @@ const OrderManager = ({ showAll = true }) => {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white rounded-xl shadow-sm border p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -295,7 +295,7 @@ const OrderManager = ({ showAll = true }) => {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white rounded-xl shadow-sm border p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -307,7 +307,7 @@ const OrderManager = ({ showAll = true }) => {
                 </div>
               </div>
             </div>
-            
+
             <div className="bg-white rounded-xl shadow-sm border p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -328,24 +328,23 @@ const OrderManager = ({ showAll = true }) => {
               {['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map(status => {
                 const count = getStatusCount(status);
                 const percentage = orders.length > 0 ? ((count / orders.length) * 100).toFixed(1) : 0;
-                
+
                 return (
                   <div key={status} className="text-center">
-                    <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-2 ${
-                      status === 'pending' ? 'bg-yellow-100' :
-                      status === 'confirmed' ? 'bg-blue-100' :
-                      status === 'processing' ? 'bg-purple-100' :
-                      status === 'shipped' ? 'bg-indigo-100' :
-                      status === 'delivered' ? 'bg-green-100' :
-                      'bg-red-100'
-                    }`}>
+                    <div className={`inline-flex items-center justify-center w-16 h-16 rounded-full mb-2 ${status === 'pending' ? 'bg-yellow-100' :
+                        status === 'confirmed' ? 'bg-blue-100' :
+                          status === 'processing' ? 'bg-purple-100' :
+                            status === 'shipped' ? 'bg-indigo-100' :
+                              status === 'delivered' ? 'bg-green-100' :
+                                'bg-red-100'
+                      }`}>
                       <span className="text-2xl font-bold">{
                         status === 'pending' ? <Clock className="w-8 h-8" /> :
-                        status === 'confirmed' ? <Package className="w-8 h-8" /> :
-                        status === 'processing' ? <Package className="w-8 h-8" /> :
-                        status === 'shipped' ? <Truck className="w-8 h-8" /> :
-                        status === 'delivered' ? <CheckCircle className="w-8 h-8" /> :
-                        <AlertCircle className="w-8 h-8" />
+                          status === 'confirmed' ? <Package className="w-8 h-8" /> :
+                            status === 'processing' ? <Package className="w-8 h-8" /> :
+                              status === 'shipped' ? <Truck className="w-8 h-8" /> :
+                                status === 'delivered' ? <CheckCircle className="w-8 h-8" /> :
+                                  <AlertCircle className="w-8 h-8" />
                       }</span>
                     </div>
                     <p className="font-semibold capitalize">{status}</p>
@@ -418,8 +417,8 @@ const OrderManager = ({ showAll = true }) => {
               <Package className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {searchQuery || statusFilter !== 'all' || dateFilter !== 'all' 
-                ? "No orders found matching your filters" 
+              {searchQuery || statusFilter !== 'all' || dateFilter !== 'all'
+                ? "No orders found matching your filters"
                 : "No orders yet"}
             </h3>
             <p className="text-gray-600">
@@ -528,7 +527,7 @@ const OrderManager = ({ showAll = true }) => {
                 </tbody>
               </table>
             </div>
-            
+
             {/* Summary Footer */}
             {showAll && (
               <div className="bg-gray-50 px-6 py-3 border-t">
@@ -576,7 +575,7 @@ const OrderModal = ({ order, onClose, onUpdate, onStatusUpdate }) => {
 
   const calculateOrderTotal = () => {
     if (order.total) return order.total;
-    
+
     return order.items?.reduce((total, item) => {
       return total + (Number(item.price) || 0) * (item.qty || 1);
     }, 0) || 0;
@@ -655,8 +654,8 @@ const OrderModal = ({ order, onClose, onUpdate, onStatusUpdate }) => {
                       </div>
                     </div>
                   )) || (
-                    <p className="text-gray-500 italic">No items in this order</p>
-                  )}
+                      <p className="text-gray-500 italic">No items in this order</p>
+                    )}
                 </div>
 
                 {/* Order Summary */}

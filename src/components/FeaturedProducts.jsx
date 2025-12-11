@@ -7,12 +7,12 @@ import ProductSkeleton from "../components/ProductSkeleton";
 
 const FeaturedProducts = () => {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true); 
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
     axios
-      .get("http://localhost:5000/api/products?limit=8")
+      .get(`${import.meta.env.VITE_API_BASE_URL}/api/products?limit=8`)
       .then((res) => setProducts(res.data))
       .catch((err) => console.error("Featured fetch error:", err))
       .finally(() => setLoading(false));

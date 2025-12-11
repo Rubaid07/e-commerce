@@ -40,7 +40,7 @@ const Login = () => {
     setLoading(true);
     try {
       await login(email, password);
-      toast.success("Welcome back! Login successful");
+      // toast.success("Welcome back! Login successful");
       
       // Clear redirect storage
       localStorage.removeItem('redirectAfterLogin');
@@ -60,7 +60,7 @@ const Login = () => {
     setGoogleLoading(true);
     try {
       await loginWithGoogle();
-      toast.success("Google login successful!");
+      // toast.success("Google login successful!");
       localStorage.removeItem('redirectAfterLogin');
       setTimeout(() => navigate(redirectPath, { replace: true }), 500);
     } catch (error) {

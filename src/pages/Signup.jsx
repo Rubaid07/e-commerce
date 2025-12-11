@@ -126,17 +126,16 @@ const handleSignup = async (e) => {
   try {
     await signup(formData.email, formData.password, formData.fullName);
     
-    toast.success(
-      <div className="flex items-center gap-3">
-        <Sparkles className="w-5 h-5 text-green-500" />
-        <div>
-          <p className="font-semibold">Account created successfully!</p>
-          <p className="text-sm text-gray-600">Welcome to Realm Wear</p>
-        </div>
-      </div>
-    );
+    // toast.success(
+    //   <div className="flex items-center gap-3">
+    //     <Sparkles className="w-5 h-5 text-green-500" />
+    //     <div>
+    //       <p className="font-semibold">Account created successfully!</p>
+    //       <p className="text-sm text-gray-600">Welcome to Realm Wear</p>
+    //     </div>
+    //   </div>
+    // );
     
-    // Navigate to home page
     setTimeout(() => {
       navigate("/");
     }, 1000);
@@ -182,7 +181,7 @@ const handleSignup = async (e) => {
   const handleGoogleSignup = async () => {
     try {
       await loginWithGoogle();
-      toast.success("Account created with Google!");
+      // toast.success("Account created with Google!");
       setTimeout(() => navigate("/"), 500);
     } catch (error) {
       toast.error(error.message || "Google signup failed");

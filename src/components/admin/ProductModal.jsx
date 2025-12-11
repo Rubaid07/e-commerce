@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../../hooks/useAuth";
 import toast from "react-hot-toast";
-import { 
+import {
   X,
   Upload,
   Image as ImageIcon
@@ -24,97 +24,97 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
   });
 
   useEffect(() => {
-  if (product) {
-    setFormData({
-      name: product.name || "",
-      price: product.price || "",
-      category: product.category || "",
-      image: product.image || "",
-      description: product.description || "",
-      stock: product.stock || "100",
-      inStock: product.inStock !== false,
-      tags: Array.isArray(product.tags) 
-        ? product.tags.join(", ") 
-        : (typeof product.tags === 'string' ? product.tags : "")
-    });
-  } else {
-    setFormData({
-      name: "",
-      price: "",
-      category: "",
-      image: "",
-      description: "",
-      stock: "100",
-      inStock: true,
-      tags: ""
-    });
-  }
-}, [product]);
+    if (product) {
+      setFormData({
+        name: product.name || "",
+        price: product.price || "",
+        category: product.category || "",
+        image: product.image || "",
+        description: product.description || "",
+        stock: product.stock || "100",
+        inStock: product.inStock !== false,
+        tags: Array.isArray(product.tags)
+          ? product.tags.join(", ")
+          : (typeof product.tags === 'string' ? product.tags : "")
+      });
+    } else {
+      setFormData({
+        name: "",
+        price: "",
+        category: "",
+        image: "",
+        description: "",
+        stock: "100",
+        inStock: true,
+        tags: ""
+      });
+    }
+  }, [product]);
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  
-  try {
-    const apiData = {
-      ...formData,
-      price: parseFloat(formData.price),
-      tags: formData.tags 
-        ? formData.tags.split(",").map(tag => tag.trim()).filter(tag => tag !== "")
-        : []
-    };
+    e.preventDefault();
+    setLoading(true);
 
-    const config = {
-      headers: { 
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
+    try {
+      const apiData = {
+        ...formData,
+        price: parseFloat(formData.price),
+        tags: formData.tags
+          ? formData.tags.split(",").map(tag => tag.trim()).filter(tag => tag !== "")
+          : []
+      };
+
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      };
+
+      let response;
+      if (product) {
+        // Update existing product
+        // console.log("Updating product:", product._id, apiData);
+        response = await axios.put(
+          `${import.meta.env.VITE_API_BASE_URL}/api/products/${product._id}`,
+          apiData,
+          config
+        );
+        toast.success("Product updated successfully");
+      } else {
+        // Create new product
+        // console.log("Creating new product:", apiData);
+        response = await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL}/api/products`,
+          apiData,
+          config
+        );
+        toast.success("Product created successfully");
       }
-    };
 
-    let response;
-    if (product) {
-      // Update existing product
-      // console.log("Updating product:", product._id, apiData);
-      response = await axios.put(
-        `http://localhost:5000/api/products/${product._id}`, 
-        apiData, 
-        config
-      );
-      toast.success("Product updated successfully");
-    } else {
-      // Create new product
-      // console.log("Creating new product:", apiData);
-      response = await axios.post(
-        "http://localhost:5000/api/products", 
-        apiData, 
-        config
-      );
-      toast.success("Product created successfully");
+      // console.log("API Response:", response.data);
+      onSave();
+    } catch (error) {
+      console.error("Error saving product:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+        config: error.config
+      });
+
+      if (error.response?.status === 404) {
+        toast.error("API endpoint not found. Check server routes.");
+      } else if (error.response?.status === 401) {
+        toast.error("Authentication required. Please login.");
+      } else if (error.response?.status === 403) {
+        toast.error("Admin access required.");
+      } else {
+        toast.error(error.response?.data?.message || "Failed to save product");
+      }
+    } finally {
+      setLoading(false);
     }
-    
-    // console.log("API Response:", response.data);
-    onSave();
-  } catch (error) {
-    console.error("Error saving product:", {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data,
-      config: error.config
-    });
-    
-    if (error.response?.status === 404) {
-      toast.error("API endpoint not found. Check server routes.");
-    } else if (error.response?.status === 401) {
-      toast.error("Authentication required. Please login.");
-    } else if (error.response?.status === 403) {
-      toast.error("Admin access required.");
-    } else {
-      toast.error(error.response?.data?.message || "Failed to save product");
-    }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

@@ -10,7 +10,7 @@ export const useWishlistCount = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchWishlistCount = useCallback(async () => {
-    
+
     if (!currentUser) {
       setWishlistCount(0);
       setLoading(false);
@@ -19,12 +19,12 @@ export const useWishlistCount = () => {
 
     try {
       // Try API first
-      const response = await axios.get('http://localhost:5000/api/wishlist', {
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/wishlist`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const count = response.data.length;
       setWishlistCount(count);
-      
+
       // Sync with localStorage as backup
       const wishlistKey = `wishlist_${currentUser.email}`;
       const apiWishlist = response.data.map(item => ({
@@ -34,7 +34,7 @@ export const useWishlistCount = () => {
         addedAt: item.addedAt
       }));
       localStorage.setItem(wishlistKey, JSON.stringify(apiWishlist));
-      
+
     } catch (error) {
       // Fallback to localStorage
       const count = wishlistManager.getWishlistCount(currentUser.email);
@@ -81,11 +81,11 @@ export const useWishlistCount = () => {
     fetchWishlistCount();
   };
 
-  return { 
-    wishlistCount, 
-    loading, 
+  return {
+    wishlistCount,
+    loading,
     refreshWishlistCount,
-    triggerWishlistUpdate: wishlistManager.triggerUpdate 
+    triggerWishlistUpdate: wishlistManager.triggerUpdate
   };
 };
 

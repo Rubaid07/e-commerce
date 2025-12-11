@@ -42,15 +42,15 @@ const Orders = () => {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:5000/api/orders", {
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/orders`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       // Filter orders for current user only
-      const userOrders = response.data.filter(order => 
+      const userOrders = response.data.filter(order =>
         order.userEmail === currentUser?.email
       );
-      
+
       setOrders(userOrders);
       setFilteredOrders(userOrders);
     } catch (error) {
@@ -66,9 +66,9 @@ const Orders = () => {
 
     // Search filter
     if (searchQuery) {
-      filtered = filtered.filter(order => 
+      filtered = filtered.filter(order =>
         order._id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        order.items?.some(item => 
+        order.items?.some(item =>
           item.name.toLowerCase().includes(searchQuery.toLowerCase())
         )
       );
@@ -83,7 +83,7 @@ const Orders = () => {
     filtered.sort((a, b) => {
       const dateA = new Date(a.createdAt);
       const dateB = new Date(b.createdAt);
-      
+
       switch (sortBy) {
         case "newest":
           return dateB - dateA;
@@ -149,7 +149,7 @@ const Orders = () => {
     const orderDateObj = new Date(orderDate);
     const deliveryDate = new Date(orderDateObj);
     deliveryDate.setDate(deliveryDate.getDate() + 7); // Assume 7 days delivery
-    
+
     return deliveryDate.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric"
@@ -163,7 +163,7 @@ const Orders = () => {
 
   const handleReorder = async (order) => {
     toast.loading("Adding items to cart...");
-    
+
     // Simulate adding to cart
     setTimeout(() => {
       toast.dismiss();
@@ -221,7 +221,7 @@ const Orders = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-8">
       <Toaster position="top-right" />
-      
+
       <div className="lg:max-w-10/12 mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
@@ -232,7 +232,7 @@ const Orders = () => {
                 View and manage all your purchases
               </p>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <button
                 onClick={fetchOrders}
@@ -264,7 +264,7 @@ const Orders = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-xl border p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -278,7 +278,7 @@ const Orders = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-xl border p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -292,7 +292,7 @@ const Orders = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-xl border p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -408,7 +408,7 @@ const Orders = () => {
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleViewOrder(order)}
@@ -487,7 +487,7 @@ const Orders = () => {
                             Reorder
                           </button>
                         )}
-                        
+
                         {(order.status === 'shipped' || order.status === 'processing') && (
                           <button
                             onClick={() => handleTrackOrder(order._id)}
@@ -497,7 +497,7 @@ const Orders = () => {
                             Track Order
                           </button>
                         )}
-                        
+
                         <button
                           onClick={() => downloadInvoice(order)}
                           className="flex items-center gap-2 px-3 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition text-sm"
@@ -505,7 +505,7 @@ const Orders = () => {
                           <Download className="w-4 h-4" />
                           Invoice
                         </button>
-                        
+
                         <button className="flex items-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm">
                           <MessageCircle className="w-4 h-4" />
                           Support

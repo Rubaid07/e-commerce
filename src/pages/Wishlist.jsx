@@ -4,14 +4,14 @@ import { Link, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth";
 import axios from "axios";
 import toast, { Toaster } from "react-hot-toast";
-import { 
-  Heart, 
-  ShoppingCart, 
-  Trash2, 
-  Eye, 
-  ChevronRight, 
-  Package, 
-  Star, 
+import {
+  Heart,
+  ShoppingCart,
+  Trash2,
+  Eye,
+  ChevronRight,
+  Package,
+  Star,
   Tag,
   Search,
   Grid,
@@ -24,7 +24,7 @@ import {
 const Wishlist = () => {
   const { currentUser, token } = useAuth();
   const navigate = useNavigate();
-  
+
   const [wishlistItems, setWishlistItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filteredItems, setFilteredItems] = useState([]);
@@ -66,14 +66,19 @@ const Wishlist = () => {
   const fetchWishlist = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("http://localhost:5000/api/wishlist", {
+      const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/wishlist`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setWishlistItems(response.data);
-      setFilteredItems(response.data);
+      
+      // Ensure response.data is an array
+      const data = Array.isArray(response.data) ? response.data : [];
+      setWishlistItems(data);
+      setFilteredItems(data);
     } catch (error) {
-      // console.error("Failed to fetch wishlist:", error);
+      console.error("Failed to fetch wishlist:", error);
       toast.error("Failed to load wishlist");
+      setWishlistItems([]);
+      setFilteredItems([]);
     } finally {
       setLoading(false);
     }
@@ -81,48 +86,57 @@ const Wishlist = () => {
 
   // Filter and sort items
   useEffect(() => {
+    // Ensure wishlistItems is an array
+    if (!Array.isArray(wishlistItems)) {
+      setFilteredItems([]);
+      return;
+    }
+
     let items = [...wishlistItems];
 
     // Apply search filter
     if (searchQuery) {
       items = items.filter(item =>
-        item.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.product?.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.notes?.toLowerCase().includes(searchQuery.toLowerCase())
+        item?.product?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item?.product?.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item?.notes?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
     // Apply stock filter
     switch (selectedFilter) {
       case "inStock":
-        items = items.filter(item => item.product?.inStock);
+        items = items.filter(item => item?.product?.inStock);
         break;
       case "outOfStock":
-        items = items.filter(item => !item.product?.inStock);
+        items = items.filter(item => !item?.product?.inStock);
         break;
       case "sale":
-        items = items.filter(item => item.product?.discount > 0);
+        items = items.filter(item => item?.product?.discount > 0);
         break;
       case "new":
         const oneMonthAgo = new Date();
         oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
         items = items.filter(item => new Date(item.addedAt) > oneMonthAgo);
         break;
+      default:
+        // For "all", keep all items
+        break;
     }
 
-    // Apply sorting
+    // Apply sorting - add safety checks
     items.sort((a, b) => {
       switch (sortBy) {
         case "date":
-          return new Date(b.addedAt) - new Date(a.addedAt);
+          return new Date(b?.addedAt || 0) - new Date(a?.addedAt || 0);
         case "date-old":
-          return new Date(a.addedAt) - new Date(b.addedAt);
+          return new Date(a?.addedAt || 0) - new Date(b?.addedAt || 0);
         case "price-high":
-          return (b.product?.price || 0) - (a.product?.price || 0);
+          return (b?.product?.price || 0) - (a?.product?.price || 0);
         case "price-low":
-          return (a.product?.price || 0) - (b.product?.price || 0);
+          return (a?.product?.price || 0) - (b?.product?.price || 0);
         case "name":
-          return (a.product?.name || "").localeCompare(b.product?.name || "");
+          return (a?.product?.name || "").localeCompare(b?.product?.name || "");
         default:
           return 0;
       }
@@ -135,15 +149,17 @@ const Wishlist = () => {
   const removeFromWishlist = async (wishlistId) => {
     setProcessing(true);
     try {
-      await axios.delete(`http://localhost:5000/api/wishlist/${wishlistId}`, {
+      await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/wishlist/${wishlistId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      setWishlistItems(prev => prev.filter(item => item._id !== wishlistId));
+
+      setWishlistItems(prev => 
+        Array.isArray(prev) ? prev.filter(item => item?._id !== wishlistId) : []
+      );
       setSelectedItems(prev => prev.filter(id => id !== wishlistId));
       toast.success("Removed from wishlist");
     } catch (error) {
-      // console.error("Failed to remove item:", error);
+      console.error("Failed to remove item:", error);
       toast.error("Failed to remove item");
     } finally {
       setProcessing(false);
@@ -161,17 +177,19 @@ const Wishlist = () => {
     try {
       await Promise.all(
         selectedItems.map(id =>
-          axios.delete(`http://localhost:5000/api/wishlist/${id}`, {
+          axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/wishlist/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
           })
         )
       );
-      
-      setWishlistItems(prev => prev.filter(item => !selectedItems.includes(item._id)));
+
+      setWishlistItems(prev => 
+        Array.isArray(prev) ? prev.filter(item => !selectedItems.includes(item?._id)) : []
+      );
       setSelectedItems([]);
       toast.success(`Removed ${selectedItems.length} items from wishlist`);
     } catch (error) {
-      // console.error("Failed to remove items:", error);
+      console.error("Failed to remove items:", error);
       toast.error("Failed to remove items");
     } finally {
       setProcessing(false);
@@ -185,21 +203,23 @@ const Wishlist = () => {
     setProcessing(true);
     try {
       await axios.put(
-        `http://localhost:5000/api/wishlist/${wishlistId}`,
+        `${import.meta.env.VITE_API_BASE_URL}/api/wishlist/${wishlistId}`,
         { notes: noteText },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
+
       setWishlistItems(prev =>
-        prev.map(item =>
-          item._id === wishlistId ? { ...item, notes: noteText } : item
-        )
+        Array.isArray(prev) 
+          ? prev.map(item =>
+              item?._id === wishlistId ? { ...item, notes: noteText } : item
+            )
+          : []
       );
       setEditingNoteId(null);
       setNoteText("");
       toast.success("Note updated");
     } catch (error) {
-      // console.error("Failed to update note:", error);
+      console.error("Failed to update note:", error);
       toast.error("Failed to update note");
     } finally {
       setProcessing(false);
@@ -208,6 +228,11 @@ const Wishlist = () => {
 
   // Add to cart from wishlist
   const addToCart = async (product, size = "M") => {
+    if (!product) {
+      toast.error("Product not found");
+      return;
+    }
+    
     try {
       const cartItem = {
         productId: product._id,
@@ -217,9 +242,8 @@ const Wishlist = () => {
         size,
         quantity: 1
       };
-      
+
       await new Promise(resolve => setTimeout(resolve, 500));
-      
       toast.success("Added to cart!");
     } catch (error) {
       toast.error("Failed to add to cart");
@@ -237,18 +261,36 @@ const Wishlist = () => {
 
   // Select all items
   const selectAllItems = () => {
+    if (!Array.isArray(filteredItems)) {
+      setSelectedItems([]);
+      return;
+    }
+    
     if (selectedItems.length === filteredItems.length) {
       setSelectedItems([]);
     } else {
-      setSelectedItems(filteredItems.map(item => item._id));
+      setSelectedItems(filteredItems.map(item => item?._id).filter(id => id));
     }
   };
 
-  // Calculate total value of wishlist
+  // Calculate total value of wishlist - WITH SAFETY CHECK
   const calculateTotalValue = () => {
-    return filteredItems.reduce((total, item) => {
-      return total + (item.product?.price || 0);
-    }, 0).toFixed(2);
+    // Check if filteredItems is an array
+    if (!Array.isArray(filteredItems)) {
+      return "0.00";
+    }
+    
+    try {
+      const total = filteredItems.reduce((total, item) => {
+        const price = item?.product?.price || 0;
+        return total + price;
+      }, 0);
+      
+      return total.toFixed(2);
+    } catch (error) {
+      console.error("Error calculating total value:", error);
+      return "0.00";
+    }
   };
 
   // If not logged in
@@ -280,10 +322,13 @@ const Wishlist = () => {
     );
   }
 
+  // Ensure filteredItems is always an array before rendering
+  const safeFilteredItems = Array.isArray(filteredItems) ? filteredItems : [];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Toaster position="top-right" />
-      
+
       {/* Header */}
       <div className="bg-white border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -301,10 +346,10 @@ const Wishlist = () => {
                 Save items you love for later
               </p>
             </div>
-            
+
             <div className="flex items-center gap-3">
               <span className="text-sm text-gray-600">
-                {filteredItems.length} {filteredItems.length === 1 ? 'item' : 'items'}
+                {safeFilteredItems.length} {safeFilteredItems.length === 1 ? 'item' : 'items'}
               </span>
               <span className="text-sm font-semibold">
                 Total: ${calculateTotalValue()}
@@ -337,11 +382,10 @@ const Wishlist = () => {
                   <button
                     key={filter.id}
                     onClick={() => setSelectedFilter(filter.id)}
-                    className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition ${
-                      selectedFilter === filter.id
+                    className={`px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition ${selectedFilter === filter.id
                         ? "bg-black text-white"
                         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    }`}
+                      }`}
                   >
                     {filter.label}
                   </button>
@@ -352,21 +396,19 @@ const Wishlist = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`p-2 rounded-lg ${
-                    viewMode === "grid"
+                  className={`p-2 rounded-lg ${viewMode === "grid"
                       ? "bg-gray-100 text-black"
                       : "text-gray-500 hover:bg-gray-100"
-                  }`}
+                    }`}
                 >
                   <Grid className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setViewMode("list")}
-                  className={`p-2 rounded-lg ${
-                    viewMode === "list"
+                  className={`p-2 rounded-lg ${viewMode === "list"
                       ? "bg-gray-100 text-black"
                       : "text-gray-500 hover:bg-gray-100"
-                  }`}
+                    }`}
                 >
                   <List className="w-5 h-5" />
                 </button>
@@ -379,7 +421,7 @@ const Wishlist = () => {
             <div className="flex items-center gap-2">
               <input
                 type="checkbox"
-                checked={selectedItems.length === filteredItems.length && filteredItems.length > 0}
+                checked={selectedItems.length === safeFilteredItems.length && safeFilteredItems.length > 0}
                 onChange={selectAllItems}
                 className="w-4 h-4 rounded border-gray-300"
               />
@@ -424,7 +466,7 @@ const Wishlist = () => {
         ) : (
           <>
             {/* Empty State */}
-            {filteredItems.length === 0 ? (
+            {safeFilteredItems.length === 0 ? (
               <div className="bg-white rounded-2xl shadow-sm border p-12 text-center">
                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Heart className="w-10 h-10 text-gray-400" />
@@ -463,17 +505,17 @@ const Wishlist = () => {
                 {/* Grid View */}
                 {viewMode === "grid" ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredItems.map((item) => (
+                    {safeFilteredItems.map((item) => (
                       <div
-                        key={item._id}
+                        key={item?._id || Math.random()}
                         className="bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-md transition-all group"
                       >
                         {/* Selection Checkbox */}
                         <div className="absolute top-3 left-3 z-10">
                           <input
                             type="checkbox"
-                            checked={selectedItems.includes(item._id)}
-                            onChange={() => toggleSelectItem(item._id)}
+                            checked={selectedItems.includes(item?._id)}
+                            onChange={() => toggleSelectItem(item?._id)}
                             className="w-5 h-5 rounded border-gray-300 bg-white shadow"
                           />
                         </div>
@@ -481,38 +523,38 @@ const Wishlist = () => {
                         {/* Product Image */}
                         <div className="relative aspect-square overflow-hidden bg-gray-100">
                           <img
-                            src={item.product?.image || `https://picsum.photos/400/400?random=${item._id}`}
-                            alt={item.product?.name}
+                            src={item?.product?.image || `https://picsum.photos/400/400?random=${item?._id || Math.random()}`}
+                            alt={item?.product?.name || "Product"}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
-                          
+
                           {/* Stock Badge */}
-                          {!item.product?.inStock && (
+                          {!item?.product?.inStock && (
                             <div className="absolute top-3 right-3 bg-red-100 text-red-700 text-xs font-semibold px-2 py-1 rounded">
                               Out of Stock
                             </div>
                           )}
-                          
+
                           {/* Quick Actions */}
                           <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
                             <div className="flex justify-center gap-2">
                               <button
-                                onClick={() => navigate(`/product/${item.product?._id}`)}
+                                onClick={() => navigate(`/product/${item?.product?._id}`)}
                                 className="p-2 bg-white rounded-full hover:bg-gray-100 transition"
                                 title="View Details"
                               >
                                 <Eye className="w-5 h-5" />
                               </button>
                               <button
-                                onClick={() => addToCart(item.product)}
-                                disabled={!item.product?.inStock || processing}
+                                onClick={() => addToCart(item?.product)}
+                                disabled={!item?.product?.inStock || processing}
                                 className="p-2 bg-white rounded-full hover:bg-gray-100 transition disabled:opacity-50"
                                 title="Add to Cart"
                               >
                                 <ShoppingCart className="w-5 h-5" />
                               </button>
                               <button
-                                onClick={() => removeFromWishlist(item._id)}
+                                onClick={() => removeFromWishlist(item?._id)}
                                 disabled={processing}
                                 className="p-2 bg-white rounded-full hover:bg-gray-100 transition disabled:opacity-50"
                                 title="Remove"
@@ -527,36 +569,35 @@ const Wishlist = () => {
                         <div className="p-4">
                           <div className="flex justify-between items-start mb-2">
                             <h3 className="font-semibold text-gray-900 line-clamp-1">
-                              {item.product?.name}
+                              {item?.product?.name || "Unnamed Product"}
                             </h3>
                             <span className="font-bold text-gray-900">
-                              ${item.product?.price?.toFixed(2)}
+                              ${(item?.product?.price || 0).toFixed(2)}
                             </span>
                           </div>
-                          
+
                           <p className="text-sm text-gray-600 mb-2">
-                            {item.product?.category}
+                            {item?.product?.category || "Uncategorized"}
                           </p>
-                          
+
                           {/* Rating */}
                           <div className="flex items-center gap-1 mb-3">
                             {[1, 2, 3, 4, 5].map(star => (
                               <Star
                                 key={star}
-                                className={`w-3 h-3 ${
-                                  star <= Math.floor(item.product?.rating || 0)
+                                className={`w-3 h-3 ${star <= Math.floor(item?.product?.rating || 0)
                                     ? "text-yellow-500 fill-current"
                                     : "text-gray-300"
-                                }`}
+                                  }`}
                               />
                             ))}
                             <span className="text-xs text-gray-500 ml-1">
-                              ({item.product?.rating || 0})
+                              ({item?.product?.rating || 0})
                             </span>
                           </div>
 
                           {/* Notes */}
-                          {item.notes ? (
+                          {item?.notes ? (
                             <div className="text-sm text-gray-600 bg-gray-50 rounded-lg p-2 mb-3">
                               <p className="line-clamp-2">{item.notes}</p>
                               {editingNoteId === item._id ? (
@@ -612,14 +653,14 @@ const Wishlist = () => {
                           {/* Actions */}
                           <div className="flex gap-2">
                             <button
-                              onClick={() => addToCart(item.product)}
-                              disabled={!item.product?.inStock || processing}
+                              onClick={() => addToCart(item?.product)}
+                              disabled={!item?.product?.inStock || processing}
                               className="flex-1 px-3 py-2 bg-black text-white text-sm rounded-lg hover:bg-gray-800 transition disabled:opacity-50"
                             >
                               Add to Cart
                             </button>
                             <button
-                              onClick={() => removeFromWishlist(item._id)}
+                              onClick={() => removeFromWishlist(item?._id)}
                               disabled={processing}
                               className="px-3 py-2 border border-gray-300 text-sm rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
                             >
@@ -633,9 +674,9 @@ const Wishlist = () => {
                 ) : (
                   /* List View */
                   <div className="space-y-4">
-                    {filteredItems.map((item) => (
+                    {safeFilteredItems.map((item) => (
                       <div
-                        key={item._id}
+                        key={item?._id || Math.random()}
                         className="bg-white rounded-xl shadow-sm border p-4 hover:shadow-md transition-all"
                       >
                         <div className="flex flex-col md:flex-row gap-4">
@@ -643,8 +684,8 @@ const Wishlist = () => {
                           <div className="flex items-start">
                             <input
                               type="checkbox"
-                              checked={selectedItems.includes(item._id)}
-                              onChange={() => toggleSelectItem(item._id)}
+                              checked={selectedItems.includes(item?._id)}
+                              onChange={() => toggleSelectItem(item?._id)}
                               className="w-5 h-5 mt-4 rounded border-gray-300"
                             />
                           </div>
@@ -652,8 +693,8 @@ const Wishlist = () => {
                           {/* Product Image */}
                           <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
                             <img
-                              src={item.product?.image || `https://picsum.photos/200/200?random=${item._id}`}
-                              alt={item.product?.name}
+                              src={item?.product?.image || `https://picsum.photos/200/200?random=${item?._id || Math.random()}`}
+                              alt={item?.product?.name || "Product"}
                               className="w-full h-full object-cover"
                             />
                           </div>
@@ -663,29 +704,28 @@ const Wishlist = () => {
                             <div className="flex flex-col sm:flex-row justify-between gap-2">
                               <div>
                                 <h3 className="font-semibold text-gray-900">
-                                  {item.product?.name}
+                                  {item?.product?.name || "Unnamed Product"}
                                 </h3>
                                 <p className="text-sm text-gray-600">
-                                  {item.product?.category}
+                                  {item?.product?.category || "Uncategorized"}
                                 </p>
                                 <div className="flex items-center gap-2 mt-1">
-                                  <span className={`text-sm px-2 py-0.5 rounded ${
-                                    item.product?.inStock
+                                  <span className={`text-sm px-2 py-0.5 rounded ${item?.product?.inStock
                                       ? "bg-green-100 text-green-800"
                                       : "bg-red-100 text-red-800"
-                                  }`}>
-                                    {item.product?.inStock ? "In Stock" : "Out of Stock"}
+                                    }`}>
+                                    {item?.product?.inStock ? "In Stock" : "Out of Stock"}
                                   </span>
                                   <span className="text-sm text-gray-600">
-                                    Added: {new Date(item.addedAt).toLocaleDateString()}
+                                    Added: {item?.addedAt ? new Date(item.addedAt).toLocaleDateString() : "Unknown"}
                                   </span>
                                 </div>
                               </div>
                               <div className="text-right">
                                 <p className="font-bold text-lg text-gray-900">
-                                  ${item.product?.price?.toFixed(2)}
+                                  ${(item?.product?.price || 0).toFixed(2)}
                                 </p>
-                                {item.product?.originalPrice && (
+                                {item?.product?.originalPrice && (
                                   <p className="text-sm text-gray-500 line-through">
                                     ${item.product.originalPrice.toFixed(2)}
                                   </p>
@@ -695,7 +735,7 @@ const Wishlist = () => {
 
                             {/* Notes Section */}
                             <div className="mt-3">
-                              {item.notes ? (
+                              {item?.notes ? (
                                 <div className="text-sm text-gray-600">
                                   <p className="mb-1 font-medium">Note:</p>
                                   <p className="bg-gray-50 rounded p-2">{item.notes}</p>
@@ -717,22 +757,22 @@ const Wishlist = () => {
                           {/* Actions */}
                           <div className="flex flex-col sm:flex-row gap-2">
                             <button
-                              onClick={() => navigate(`/product/${item.product?._id}`)}
+                              onClick={() => navigate(`/product/${item?.product?._id}`)}
                               className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-2"
                             >
                               <Eye className="w-4 h-4" />
                               <span className="hidden sm:inline">View</span>
                             </button>
                             <button
-                              onClick={() => addToCart(item.product)}
-                              disabled={!item.product?.inStock || processing}
+                              onClick={() => addToCart(item?.product)}
+                              disabled={!item?.product?.inStock || processing}
                               className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition disabled:opacity-50 flex items-center justify-center gap-2"
                             >
                               <ShoppingCart className="w-4 h-4" />
                               <span className="hidden sm:inline">Add to Cart</span>
                             </button>
                             <button
-                              onClick={() => removeFromWishlist(item._id)}
+                              onClick={() => removeFromWishlist(item?._id)}
                               disabled={processing}
                               className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition disabled:opacity-50 flex items-center justify-center gap-2"
                             >
@@ -757,12 +797,12 @@ const Wishlist = () => {
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
                           <span>Total Items:</span>
-                          <span className="font-semibold">{filteredItems.length}</span>
+                          <span className="font-semibold">{safeFilteredItems.length}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>In Stock:</span>
                           <span className="font-semibold">
-                            {filteredItems.filter(item => item.product?.inStock).length}
+                            {safeFilteredItems.filter(item => item?.product?.inStock).length}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -793,7 +833,7 @@ const Wishlist = () => {
                       <div className="space-y-2">
                         <button
                           onClick={() => {
-                            const inStockItems = filteredItems.filter(item => item.product?.inStock);
+                            const inStockItems = safeFilteredItems.filter(item => item?.product?.inStock);
                             if (inStockItems.length > 0) {
                               toast.success(`Added ${inStockItems.length} items to cart`);
                             } else {
@@ -806,7 +846,7 @@ const Wishlist = () => {
                         </button>
                         <button
                           onClick={() => {
-                            const saleItems = filteredItems.filter(item => item.product?.discount > 0);
+                            const saleItems = safeFilteredItems.filter(item => item?.product?.discount > 0);
                             if (saleItems.length > 0) {
                               toast.success(`Found ${saleItems.length} items on sale`);
                             } else {
