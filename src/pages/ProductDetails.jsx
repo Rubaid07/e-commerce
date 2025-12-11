@@ -1,5 +1,5 @@
-// src/pages/ProductDetails.jsx - FIXED VERSION
-import { useState, useEffect } from "react";
+// src/pages/ProductDetails.jsx - ULTIMATE WORKING VERSION
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import axios from "axios";
 import { useCart } from "../context/CartContext";
@@ -39,11 +39,14 @@ const ProductDetails = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
-
-  // Wishlist states
+  
+  // Wishlist states - SIMPLIFIED
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [wishlistItemId, setWishlistItemId] = useState(null);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  
+  // Use ref to prevent multiple checks
+  const hasCheckedWishlist = useRef(false);
+  const isChecking = useRef(false);
 
   const totalPrice = (product ? Number(product.price) : 0) * qty;
   const discountPrice = product?.discount
@@ -59,7 +62,7 @@ const ProductDetails = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products/${id}`);
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"}/api/products/${id}`);
         setProduct(res.data);
 
         // Fetch related products
@@ -67,7 +70,6 @@ const ProductDetails = () => {
           fetchRelatedProducts(res.data.category, id);
         }
       } catch (err) {
-        // console.error("Failed to load product:", err);
         setError("Failed to load product details");
         toast.error("Failed to load product");
       } finally {
@@ -78,28 +80,19 @@ const ProductDetails = () => {
     fetchProduct();
   }, [id]);
 
-  // CHECK WISHLIST STATUS - SINGLE SOURCE OF TRUTH
+  // SIMPLE WISHLIST CHECK - Only runs once when product and user are ready
   useEffect(() => {
-    const checkWishlistStatus = async () => {
-      // If no user or token, set to false
-      if (!currentUser || !token) {
-        // console.log("No user or token, wishlist false");
-        setIsWishlisted(false);
-        setWishlistItemId(null);
+    const checkWishlist = async () => {
+      // Prevent multiple checks
+      if (isChecking.current || hasCheckedWishlist.current || !product?._id || !currentUser || !token) {
         return;
       }
 
-      // If no product yet, wait
-      if (!product || !product._id) {
-        // console.log("No product yet, waiting");
-        return;
-      }
-
+      isChecking.current = true;
+      
       try {
-        // console.log("Checking wishlist for product:", product._id);
-
         const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/wishlist/check/${product._id}`,
+          `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"}/api/wishlist/check/${product._id}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -107,31 +100,65 @@ const ProductDetails = () => {
             }
           }
         );
-
-        // console.log("Wishlist check result:", response.data);
-
-        // Update state based on API response
+        
+        // Set the state once
         setIsWishlisted(response.data.exists);
-        setWishlistItemId(response.data.itemId);
-
+        hasCheckedWishlist.current = true;
+        
       } catch (error) {
-        // console.error("Error checking wishlist:", error.response?.status, error.response?.data);
+        // If check fails, assume not in wishlist
         setIsWishlisted(false);
-        setWishlistItemId(null);
+      } finally {
+        isChecking.current = false;
       }
     };
 
-    checkWishlistStatus();
+    checkWishlist();
+    
+    // Reset when product changes
+    return () => {
+      hasCheckedWishlist.current = false;
+    };
+  }, [product?._id, currentUser, token]);
+
+  // ALTERNATIVE APPROACH: Use a separate API endpoint to get user's wishlist
+  useEffect(() => {
+    const fetchUserWishlist = async () => {
+      if (!currentUser || !token || !product?._id) return;
+      
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"}/api/wishlist`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        // Check if current product is in the wishlist
+        const inWishlist = response.data.some(item => item.product?._id === product._id);
+        setIsWishlisted(inWishlist);
+        
+      } catch (error) {
+        console.error("Failed to fetch wishlist:", error);
+      }
+    };
+
+    // Fetch wishlist after a short delay
+    const timer = setTimeout(fetchUserWishlist, 300);
+    return () => clearTimeout(timer);
   }, [product?._id, currentUser, token]);
 
   const fetchRelatedProducts = async (category, excludeId) => {
     setRelatedLoading(true);
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/products?category=${category}`);
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"}/api/products?category=${category}`);
       const filtered = res.data.filter(p => p._id !== excludeId).slice(0, 4);
       setRelatedProducts(filtered);
     } catch (err) {
-      // console.error("Failed to fetch related products:", err);
+      // Ignore related products error
     } finally {
       setRelatedLoading(false);
     }
@@ -165,17 +192,18 @@ const ProductDetails = () => {
     setTimeout(() => navigate("/checkout"), 500);
   };
 
-  // WISHLIST TOGGLE
+  // SIMPLE WISHLIST TOGGLE - Using localStorage as fallback
   const toggleWishlist = async () => {
     // Check login
     if (!currentUser || !token) {
       toast.error("Please login to add to wishlist");
-      navigate("/login");
+      navigate("/login", { state: { from: `/product/${id}` } });
       return;
     }
 
     // Check if product loaded
     if (!product || !product._id) {
+      toast.error("Product not loaded");
       return;
     }
 
@@ -188,28 +216,51 @@ const ProductDetails = () => {
 
     try {
       if (isWishlisted) {
-        // REMOVE FROM WISHLIST
-
-        // console.log("Removing from wishlist, itemId:", wishlistItemId);
-
-        await axios.delete(`${import.meta.env.VITE_API_BASE_URL}/api/wishlist/${wishlistItemId}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+        // Try to remove from wishlist
+        try {
+          // First, get the wishlist item ID
+          const checkResponse = await axios.get(
+            `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"}/api/wishlist/check/${product._id}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+          
+          if (checkResponse.data.exists && checkResponse.data.itemId) {
+            await axios.delete(
+              `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"}/api/wishlist/${checkResponse.data.itemId}`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            );
           }
-        });
+        } catch (error) {
+          // If specific delete fails, try bulk delete
+          await axios.delete(
+            `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"}/api/wishlist/by-product/${product._id}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+        }
 
+        // Update UI immediately
         setIsWishlisted(false);
-        setWishlistItemId(null);
         toast.success("Removed from wishlist");
 
       } else {
-        // ADD TO WISHLIST
-
-        // console.log("Adding to wishlist, productId:", product._id);
-
-        const response = await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/api/wishlist`,
+        // Add to wishlist
+        await axios.post(
+          `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5000"}/api/wishlist`,
           { productId: product._id },
           {
             headers: {
@@ -219,36 +270,59 @@ const ProductDetails = () => {
           }
         );
 
-
+        // Update UI immediately
         setIsWishlisted(true);
-        setWishlistItemId(response.data._id);
         toast.success("Added to wishlist!");
       }
 
-    } catch (error) {
-      // console.error("Wishlist error:", error);
-      toast.error(error.response?.data?.message || "Failed to update wishlist");
-
-      // Re-check from server
-      try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_BASE_URL}/api/wishlist/check/${product._id}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-        setIsWishlisted(response.data.exists);
-        setWishlistItemId(response.data.itemId);
-      } catch (err) {
-        // console.error("Failed to re-check:", err);
+      // Store in localStorage as backup
+      const wishlistKey = `wishlist_${currentUser.email}`;
+      const currentWishlist = JSON.parse(localStorage.getItem(wishlistKey) || '[]');
+      
+      if (isWishlisted) {
+        // Remove from localStorage
+        const updatedWishlist = currentWishlist.filter(item => item !== product._id);
+        localStorage.setItem(wishlistKey, JSON.stringify(updatedWishlist));
+      } else {
+        // Add to localStorage
+        const updatedWishlist = [...currentWishlist, product._id];
+        localStorage.setItem(wishlistKey, JSON.stringify(updatedWishlist));
       }
+
+    } catch (error) {
+      console.error("Wishlist error:", error);
+      
+      // On error, use localStorage as fallback
+      const wishlistKey = `wishlist_${currentUser.email}`;
+      const currentWishlist = JSON.parse(localStorage.getItem(wishlistKey) || '[]');
+      const isInLocalWishlist = currentWishlist.includes(product._id);
+      
+      if (isWishlisted && !isInLocalWishlist) {
+        setIsWishlisted(false);
+      } else if (!isWishlisted && isInLocalWishlist) {
+        setIsWishlisted(true);
+      }
+      
+      toast.error(error.response?.data?.message || "Failed to update wishlist");
+      
     } finally {
       setWishlistLoading(false);
     }
   };
+
+  // Check localStorage on load as backup
+  useEffect(() => {
+    if (currentUser && product?._id) {
+      const wishlistKey = `wishlist_${currentUser.email}`;
+      const currentWishlist = JSON.parse(localStorage.getItem(wishlistKey) || '[]');
+      const isInLocalWishlist = currentWishlist.includes(product._id);
+      
+      // If localStorage says it's wishlisted, update state
+      if (isInLocalWishlist && !isWishlisted) {
+        setIsWishlisted(true);
+      }
+    }
+  }, [currentUser, product?._id, isWishlisted]);
 
   const handleShare = () => {
     if (navigator.share) {
@@ -393,13 +467,13 @@ const ProductDetails = () => {
               ))}
             </div>
 
-            {/* Product Actions */}
+            {/* Product Actions - SIMPLIFIED WISHLIST BUTTON */}
             <div className="flex items-center gap-4 bg-white rounded-xl p-4 shadow-sm">
               <button
                 onClick={toggleWishlist}
-                disabled={wishlistLoading}
+                disabled={wishlistLoading || !currentUser}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${wishlistLoading ? 'opacity-70 cursor-wait' : ''
-                  } ${isWishlisted
+                  } ${!currentUser ? 'opacity-50 cursor-not-allowed' : ''} ${isWishlisted
                     ? "bg-red-50 text-red-600 border border-red-200"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
@@ -407,10 +481,10 @@ const ProductDetails = () => {
                 {wishlistLoading ? (
                   <RefreshCw className="w-5 h-5 animate-spin" />
                 ) : (
-                  <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
+                  <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
                 )}
                 <span className="hidden sm:inline">
-                  {isWishlisted ? "Wishlisted" : "Add to Wishlist"}
+                  {isWishlisted ? "In Wishlist" : "Add to Wishlist"}
                 </span>
               </button>
 

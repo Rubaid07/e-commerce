@@ -9,8 +9,8 @@ const Hero = () => {
     "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=1600&q=80",
     "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1600&q=80",
     "https://images.unsplash.com/photo-1578932750294-f5075e85f44a?auto=format&fit=crop&w=1600&q=80",
-    "https://images.unsplash.com/photo-1548123378-bde4eca81d2d?auto=format&fit=crop&w=1600&q=80",
-    "https://images.unsplash.com/photo-1521223890158-f9f7c3d5d504?auto=format&fit=crop&w=1600&q=80"
+    "https://images.unsplash.com/photo-1598775378121-e24f7062c151?auto=format&fit=crop&w=1600&q=80",
+    "https://images.unsplash.com/photo-1625698311031-f0dd15be5144?auto=format&fit=crop&w=1600&q=80"
   ];
 
   const [currentSlide, setCurrentSlide] = useState(0);
