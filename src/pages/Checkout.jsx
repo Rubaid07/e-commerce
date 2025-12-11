@@ -146,7 +146,7 @@ const Checkout = () => {
         }}
       />
       
-      <div className="max-w-7xl mx-auto">
+      <div className="lg:max-w-10/12 mx-auto">
         {/* Progress Steps */}
         <div className="mb-8">
           <div className="flex items-center justify-center mb-4">
@@ -351,7 +351,7 @@ const Checkout = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-black to-gray-800 text-white py-4 rounded-xl font-bold hover:from-gray-800 hover:to-black transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center gap-3"
+                className="w-full bg-gradient-to-r from-black to-gray-800 text-white py-4 rounded-xl font-bold hover:from-gray-800 hover:to-black transition duration-300 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg hover:shadow-xl flex items-center justify-center gap-3 cursor-pointer"
               >
                 {loading ? (
                   <>
@@ -373,7 +373,7 @@ const Checkout = () => {
           <div className="space-y-6">
             {/* Order Summary */}
             <div className="bg-white rounded-2xl shadow-sm border p-6">
-              <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center">
                   <ShoppingBag className="w-5 h-5 text-orange-600" />
                 </div>
@@ -383,7 +383,7 @@ const Checkout = () => {
               {/* Items List */}
               <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                 {items.map((item) => (
-                  <div key={`${item._id}-${item.size}`} className="flex gap-4 items-center group">
+                  <div key={`${item._id}-${item.size}`} className="flex gap-4 items-center group py-4">
                     <div className="relative">
                       <img 
                         src={item.image} 
@@ -501,7 +501,7 @@ const Checkout = () => {
             {/* Continue Shopping */}
             <button
               onClick={() => navigate("/shop")}
-              className="w-full border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50 transition flex items-center justify-center gap-2"
+              className="w-full border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-50 transition flex items-center justify-center gap-2 cursor-pointer"
             >
               <ShoppingBag className="w-5 h-5" />
               Continue Shopping

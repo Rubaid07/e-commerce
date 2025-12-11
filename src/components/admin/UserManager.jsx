@@ -82,7 +82,7 @@ const UserManager = () => {
       setUsers(mockUsers);
       setFilteredUsers(mockUsers);
     } catch (error) {
-      console.error("Failed to fetch users:", error);
+      // console.error("Failed to fetch users:", error);
       toast.error("Failed to load users");
     } finally {
       setLoading(false);

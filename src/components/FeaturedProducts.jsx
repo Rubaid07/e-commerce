@@ -3,24 +3,24 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { Star } from "lucide-react";
 import axios from "axios";
-import ProductSkeleton from "../components/ProductSkeleton"; // ← skeleton card
+import ProductSkeleton from "../components/ProductSkeleton";
 
 const FeaturedProducts = () => {
   const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true); // ← loading state
+  const [loading, setLoading] = useState(true); 
 
   useEffect(() => {
     setLoading(true);
     axios
-      .get("http://localhost:5000/api/products?limit=4")
+      .get("http://localhost:5000/api/products?limit=8")
       .then((res) => setProducts(res.data))
       .catch((err) => console.error("Featured fetch error:", err))
-      .finally(() => setLoading(false)); // ← stop skeleton
+      .finally(() => setLoading(false));
   }, []);
 
   // Semi-width container + skeleton grid
   return (
-    <section className="py-16 px-4 sm:px-6 lg:px-8 max-w-10/12 mx-auto">
+    <section className="py-16 px-4 sm:px-6 lg:px-8 lg:max-w-10/12 mx-auto">
       <div className="text-center mb-12">
         <span className="inline-block text-amber-600 font-semibold mb-2">✨ Featured Collection</span>
         <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Our Most Loved Products</h2>
@@ -30,7 +30,7 @@ const FeaturedProducts = () => {
       {/* Skeleton or Real Grid */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-          {[...Array(4)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <ProductSkeleton key={i} />
           ))}
         </div>

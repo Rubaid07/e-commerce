@@ -10,7 +10,6 @@ export const useWishlistCount = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchWishlistCount = useCallback(async () => {
-    console.log('Fetching wishlist count for user:', currentUser?.email);
     
     if (!currentUser) {
       setWishlistCount(0);
@@ -36,13 +35,10 @@ export const useWishlistCount = () => {
       }));
       localStorage.setItem(wishlistKey, JSON.stringify(apiWishlist));
       
-      console.log('API wishlist count:', count);
     } catch (error) {
-      console.log('API failed, using localStorage');
       // Fallback to localStorage
       const count = wishlistManager.getWishlistCount(currentUser.email);
       setWishlistCount(count);
-      console.log('LocalStorage wishlist count:', count);
     } finally {
       setLoading(false);
     }
@@ -54,13 +50,11 @@ export const useWishlistCount = () => {
 
     // Subscribe to wishlist updates
     const unsubscribe = wishlistManager.addListener(() => {
-      console.log('WishlistManager notified, refreshing count');
       fetchWishlistCount();
     });
 
     // Listen for custom events
     const handleCustomEvent = () => {
-      console.log('Custom wishlist event received');
       fetchWishlistCount();
     };
 

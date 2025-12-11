@@ -12,18 +12,10 @@ import {
   ChevronRight, 
   Package, 
   Star, 
-  Filter,
-  X,
-  AlertCircle,
   Tag,
-  Clock,
-  Share2,
   Search,
   Grid,
   List,
-  Plus,
-  Minus,
-  Check,
   Loader,
   ShoppingBag,
   ArrowLeft
@@ -80,7 +72,7 @@ const Wishlist = () => {
       setWishlistItems(response.data);
       setFilteredItems(response.data);
     } catch (error) {
-      console.error("Failed to fetch wishlist:", error);
+      // console.error("Failed to fetch wishlist:", error);
       toast.error("Failed to load wishlist");
     } finally {
       setLoading(false);
@@ -151,7 +143,7 @@ const Wishlist = () => {
       setSelectedItems(prev => prev.filter(id => id !== wishlistId));
       toast.success("Removed from wishlist");
     } catch (error) {
-      console.error("Failed to remove item:", error);
+      // console.error("Failed to remove item:", error);
       toast.error("Failed to remove item");
     } finally {
       setProcessing(false);
@@ -179,7 +171,7 @@ const Wishlist = () => {
       setSelectedItems([]);
       toast.success(`Removed ${selectedItems.length} items from wishlist`);
     } catch (error) {
-      console.error("Failed to remove items:", error);
+      // console.error("Failed to remove items:", error);
       toast.error("Failed to remove items");
     } finally {
       setProcessing(false);
@@ -207,7 +199,7 @@ const Wishlist = () => {
       setNoteText("");
       toast.success("Note updated");
     } catch (error) {
-      console.error("Failed to update note:", error);
+      // console.error("Failed to update note:", error);
       toast.error("Failed to update note");
     } finally {
       setProcessing(false);
@@ -217,8 +209,6 @@ const Wishlist = () => {
   // Add to cart from wishlist
   const addToCart = async (product, size = "M") => {
     try {
-      // In a real app, you would call your cart API here
-      // For now, we'll simulate it
       const cartItem = {
         productId: product._id,
         name: product.name,
@@ -228,11 +218,7 @@ const Wishlist = () => {
         quantity: 1
       };
       
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // You would typically dispatch to CartContext here
-      // addToCart(product, size);
       
       toast.success("Added to cart!");
     } catch (error) {

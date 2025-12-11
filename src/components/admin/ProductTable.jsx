@@ -92,17 +92,17 @@ const ProductTable = ({ products, loading, onEdit, onDelete, onToggleStock }) =>
                     </div>
                   )}
                 </td>
-                <td className="px-6 py-4">
-                  <div className="text-sm">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      product.inStock
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}>
-                      {product.inStock ? "In Stock" : "Out of Stock"}
-                    </span>
-                  </div>
-                </td>
+                <td className="px-3  py-3 ">
+  <div className="text-sm">
+    <span className={`inline-flex items-center px-2 py-0.5 sm:px-2.5 sm:py-0.5 rounded-full text-xs font-medium ${
+      product.inStock
+        ? "bg-green-100 text-green-800"
+        : "bg-red-100 text-red-800"
+    }`}>
+      {product.inStock ? "In Stock" : "Out"}
+    </span>
+  </div>
+</td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     <div className="flex items-center">
@@ -146,9 +146,6 @@ const ProductTable = ({ products, loading, onEdit, onDelete, onToggleStock }) =>
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                      <MoreVertical className="w-4 h-4" />
                     </button>
                   </div>
                 </td>

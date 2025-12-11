@@ -38,9 +38,9 @@ const AdminDashboard = () => {
         return (
           <div className="space-y-6">
             <DashboardStats />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-6">
               <SalesChart />
-              <div className="bg-white rounded-xl shadow p-6">
+              <div className="bg-white rounded-xl shadow sm:p-6 p-3">
                 <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                   <ListOrdered className="w-5 h-5" />
                   Recent Orders
@@ -71,29 +71,29 @@ const AdminDashboard = () => {
       
       {/* Header */}
       <div className="bg-white border-b shadow-sm">
-        <div className="max-w-10/12 mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="lg:max-w-10/12 mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
                 <Shield className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-600">Manage your e-commerce platform</p>
+                <h1 className="lg:text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+                <p className="md:text-sm text-xs text-gray-600">Manage your e-commerce platform</p>
               </div>
             </div>
-            <div className="text-sm text-gray-600">
+            <div className="md:text-sm text-xs text-gray-600">
               Last updated: {new Date().toLocaleDateString()}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-10/12 mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="lg:max-w-10/12 mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar */}
           <div className="lg:w-1/5">
-            <div className="bg-white rounded-xl shadow-sm border p-4">
+            <div className="bg-white rounded-xl shadow-sm border p-4 sticky top-23">
               <nav className="space-y-2">
                 {tabs.map((tab) => (
                   <button
@@ -101,7 +101,7 @@ const AdminDashboard = () => {
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center gap-3 w-full px-4 py-3 rounded-lg transition-all ${
                       activeTab === tab.id
-                        ? "bg-gradient-to-r from-purple-50 to-blue-50 text-purple-700 border-l-4 border-purple-600"
+                        ? "bg-black text-white border-l-4 border-gray-900"
                         : "text-gray-700 hover:bg-gray-50"
                     }`}
                   >

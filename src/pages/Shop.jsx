@@ -39,8 +39,7 @@ const Shop = () => {
   });
   const sidebarRef = useRef(null);
 
-  // Fixed navbar height - IMPORTANT: This should match your actual navbar height
-  const NAVBAR_HEIGHT = 64; // h-16 = 64px
+  const NAVBAR_HEIGHT = 64;
 
   // Fetch products
   useEffect(() => {
@@ -66,7 +65,7 @@ const Shop = () => {
         
         setCategories(["All", ...categoryList, "Sale", "New Arrivals", "Best Sellers"]);
       } catch (err) {
-        console.error("Failed to fetch products:", err);
+        // console.error("Failed to fetch products:", err);
         setError("Failed to load products. Please try again later.");
       } finally {
         setLoading(false);
@@ -85,7 +84,7 @@ const Shop = () => {
     };
   };
 
-  // Optimized filter function
+  // filter function
   const applyFilters = useCallback(() => {
     if (!products.length) return [];
     
@@ -103,7 +102,7 @@ const Shop = () => {
             const date = new Date(p.createdAt || p.updatedAt || Date.now());
             const diffTime = Math.abs(Date.now() - date);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            return diffDays <= 30; // Last 30 days
+            return diffDays <= 30;
           });
           break;
         case "Best Sellers":
@@ -201,7 +200,7 @@ const Shop = () => {
       <div 
         className="bg-white shadow-sm border-b"
       >
-        <div className="max-w-10/12 mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="lg:max-w-10/12 mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Shop</h1>
@@ -236,7 +235,7 @@ const Shop = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-10/12 mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="lg:max-w-10/12 mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Fixed Sidebar - Now properly positioned */}
           <div className="lg:w-1/4">
@@ -245,8 +244,8 @@ const Shop = () => {
               className="bg-white rounded-xl shadow-sm border overflow-y-auto"
               style={{
                 position: 'sticky',
-                top: `${NAVBAR_HEIGHT + 32}px`, // navbar height + padding
-                maxHeight: `calc(100vh - ${NAVBAR_HEIGHT + 64}px)`, // Full viewport minus navbar and padding
+                top: `${NAVBAR_HEIGHT + 32}px`,
+                maxHeight: `calc(100vh - ${NAVBAR_HEIGHT + 64}px)`,
                 overflowY: 'auto'
               }}
             >

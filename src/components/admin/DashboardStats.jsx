@@ -9,6 +9,7 @@ import {
   BarChart3,
   Calendar
 } from "lucide-react";
+import React from "react";
 
 const DashboardStats = () => {
   const stats = [
@@ -56,29 +57,33 @@ const DashboardStats = () => {
 
   return (
     <div className="space-y-6">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-sm border p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className={`w-12 h-12 ${stat.color} rounded-lg flex items-center justify-center`}>
-                {stat.icon}
-              </div>
-              <div className={`flex items-center gap-1 ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-                {stat.trend === 'up' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                <span className="text-sm font-medium">{stat.change}</span>
-              </div>
-            </div>
-            <h3 className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</h3>
-            <p className="text-gray-600">{stat.title}</p>
+<div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+  {stats.map((stat, index) => (
+    <div key={index} className="bg-white rounded-xl shadow-sm border p-3 sm:p-4 md:p-6">
+      <div className="flex items-center justify-between mb-2 sm:mb-3 md:mb-4">
+        <div className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 ${stat.color} rounded-lg flex items-center justify-center`}>
+          <div className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6">
+            {React.cloneElement(stat.icon, { className: "w-full h-full" })}
           </div>
-        ))}
+        </div>
+        <div className={`flex items-center gap-1 ${stat.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+          {stat.trend === 'up' ? 
+            <TrendingUp className="w-3 h-3 sm:w-3 sm:h-3 md:w-4 md:h-4" /> : 
+            <TrendingDown className="w-3 h-3 sm:w-3 sm:h-3 md:w-4 md:h-4" />
+          }
+          <span className="text-xs font-medium">{stat.change}</span>
+        </div>
       </div>
+      <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">{stat.value}</h3>
+      <p className="text-xs sm:text-sm md:text-base text-gray-600">{stat.title}</p>
+    </div>
+  ))}
+</div>
 
       {/* Recent Activity & Overview */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Activity */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border p-6">
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border sm:p-6 p-3">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-bold flex items-center gap-2">
               <BarChart3 className="w-5 h-5" />
@@ -90,7 +95,7 @@ const DashboardStats = () => {
           </div>
           <div className="space-y-4">
             {recentActivities.map((activity) => (
-              <div key={activity.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors">
+              <div key={activity.id} className="flex items-center justify-between sm:p-3 hover:bg-gray-50 rounded-lg transition-colors">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
                     <Users className="w-5 h-5 text-gray-600" />

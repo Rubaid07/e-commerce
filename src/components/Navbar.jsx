@@ -1,5 +1,5 @@
 // src/components/Navbar.jsx
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth";
 import { useCart } from "../context/CartContext";
 import { useWishlistCount } from "../hooks/useWishlistCount";
@@ -14,7 +14,9 @@ import {
   Shield, 
   ChevronDown,
   Heart,
-  Package
+  Package,
+  Lock,
+  AlertCircle
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { wishlistManager } from "../utils/wishlistManager";
@@ -24,10 +26,12 @@ const Navbar = () => {
   const { itemCount } = useCart();
   const { wishlistCount, refreshWishlistCount } = useWishlistCount();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [localWishlistCount, setLocalWishlistCount] = useState(0);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   // Detect scroll for navbar effect
   useEffect(() => {
@@ -38,13 +42,11 @@ const Navbar = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setIsMenuOpen(false);
     setShowProfileMenu(false);
   }, [location.pathname]);
 
-  // Close profile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (showProfileMenu && !event.target.closest('.profile-menu-container')) {
@@ -55,9 +57,7 @@ const Navbar = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showProfileMenu]);
 
-
-  // Real-time wishlist count subscription
-   useEffect(() => {
+  useEffect(() => {
     // Initial count
     if (currentUser) {
       const count = wishlistManager.getWishlistCount(currentUser.email);
@@ -69,13 +69,12 @@ const Navbar = () => {
       if (currentUser) {
         const count = wishlistManager.getWishlistCount(currentUser.email);
         setLocalWishlistCount(count);
-        console.log('Navbar wishlist count updated:', count);
       }
     });
 
     // Listen for custom events
     const handleWishlistEvent = () => {
-      refreshWishlistCount(); // Force refresh from hook
+      refreshWishlistCount();
     };
 
     window.addEventListener('wishlist-updated', handleWishlistEvent);
@@ -107,9 +106,17 @@ const Navbar = () => {
     return currentUser.email.split('@')[0];
   };
 
+  const handleProtectedRouteClick = (e, route) => {
+    if (!currentUser) {
+      e.preventDefault();
+      setShowLoginModal(true);
+      localStorage.setItem('redirectAfterLogin', route);
+    }
+  };
+
   const navLinks = [
-    { path: "/", label: "Home", icon: <Home className="w-4 h-4" /> },
-    { path: "/shop", label: "Shop", icon: <Store className="w-4 h-4" /> },
+    { path: "/", label: "Home", icon: <Home className="w-4 h-4" />, protected: false },
+    { path: "/shop", label: "Shop", icon: <Store className="w-4 h-4" />, protected: false },
   ];
 
   // Add admin link if user is admin
@@ -117,9 +124,24 @@ const Navbar = () => {
     navLinks.push({ 
       path: "/admin", 
       label: "Admin Panel", 
-      icon: <Shield className="w-4 h-4" /> 
+      icon: <Shield className="w-4 h-4" />,
+      protected: true 
     });
   }
+  
+  navLinks.push({ 
+    path: "/orders", 
+    label: "My Orders", 
+    icon: <Package className="w-4 h-4" />,
+    protected: true 
+  });
+
+  const handleLoginAndRedirect = () => {
+    const redirectPath = localStorage.getItem('redirectAfterLogin') || '/orders';
+    localStorage.removeItem('redirectAfterLogin');
+    setShowLoginModal(false);
+    navigate('/signup', { state: { from: redirectPath } });
+  };
 
   return (
     <>
@@ -131,7 +153,7 @@ const Navbar = () => {
       }`}>
         <div className="lg:max-w-10/12 mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
           <div className="flex justify-between items-center">
-            {/* Logo - Responsive sizing */}
+            {/* Logo */}
             <Link to="/" className="flex items-center space-x-1.5 sm:space-x-2 group flex-shrink-0">
               <div className="relative">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-black to-gray-800 rounded-lg flex items-center justify-center transform group-hover:rotate-6 transition-transform duration-300">
@@ -150,33 +172,45 @@ const Navbar = () => {
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center space-x-1">
               {navLinks.map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className={`relative flex items-center space-x-2 px-3 lg:px-4 py-2 rounded-lg transition-all duration-200 group ${
-                    location.pathname === link.path
-                      ? 'text-black font-semibold'
-                      : 'text-gray-600 hover:text-black'
-                  }`}
-                >
-                  {link.icon}
-                  <span className="text-sm lg:text-base">{link.label}</span>
-                  
-                  {/* Active indicator */}
-                  {location.pathname === link.path && (
-                    <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-0.5 bg-black rounded-full"></div>
+                <div key={link.path} className="relative">
+                  {link.protected && !currentUser ? (
+                    <button
+                      onClick={(e) => handleProtectedRouteClick(e, link.path)}
+                      className="relative flex items-center space-x-2 px-3 lg:px-4 py-2 rounded-lg transition-all duration-200 group text-gray-600 hover:text-black cursor-pointer"
+                    >
+                      {link.icon}
+                      <span className="text-sm lg:text-base">{link.label}</span>
+                      <div className="absolute inset-0 bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 -z-10"></div>
+                    </button>
+                  ) : (
+                    <Link
+                      to={link.path}
+                      className={`relative flex items-center space-x-2 px-3 lg:px-4 py-2 rounded-lg transition-all duration-200 group ${
+                        location.pathname === link.path
+                          ? 'text-black font-semibold'
+                          : 'text-gray-600 hover:text-black'
+                      }`}
+                    >
+                      {link.icon}
+                      <span className="text-sm lg:text-base">{link.label}</span>
+                      
+                      {/* Active indicator */}
+                      {location.pathname === link.path && (
+                        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-0.5 bg-black rounded-full"></div>
+                      )}
+                      
+                      {/* Hover effect */}
+                      <div className="absolute inset-0 bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 -z-10"></div>
+                    </Link>
                   )}
-                  
-                  {/* Hover effect */}
-                  <div className="absolute inset-0 bg-gray-100 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 -z-10"></div>
-                </Link>
+                </div>
               ))}
             </div>
 
-            {/* Right Side Actions - Responsive spacing */}
+            {/* Right Side Actions */}
             <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-4">
-              {/* Wishlist Icon - Only show if user is logged in */}
-              {currentUser && (
+              {/* Wishlist Icon */}
+              {currentUser ? (
                 <Link 
                   to="/wishlist" 
                   className="relative p-1.5 sm:p-2 rounded-full hover:bg-gray-100 transition-colors duration-200 group"
@@ -189,9 +223,17 @@ const Navbar = () => {
                     </span>
                   )}
                 </Link>
+              ) : (
+                <button
+                  onClick={(e) => handleProtectedRouteClick(e, '/wishlist')}
+                  className="relative p-1.5 sm:p-2 rounded-full hover:bg-gray-100 transition-colors duration-200 group"
+                  title="My Wishlist"
+                >
+                  <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 group-hover:text-red-500 transition-colors" />
+                </button>
               )}
 
-              {/* Cart Icon - Responsive sizing */}
+              {/* Cart Icon */}
               <Link 
                 to="/checkout" 
                 className="relative p-1.5 sm:p-2 rounded-full hover:bg-gray-100 transition-colors duration-200 group" 
@@ -212,7 +254,6 @@ const Navbar = () => {
                     onClick={() => setShowProfileMenu(!showProfileMenu)}
                     className="flex items-center space-x-1 sm:space-x-2 pl-2 sm:pl-3 pr-1 sm:pr-2 py-1 sm:py-1.5 rounded-full bg-gray-50 hover:bg-gray-100 transition-colors duration-200 border border-gray-200 group"
                   >
-                    {/* Profile Image/Initial - Responsive sizing */}
                     {photoURL ? (
                       <img
                         src={photoURL}
@@ -235,7 +276,7 @@ const Navbar = () => {
                     }`} />
                   </button>
 
-                  {/* Profile Dropdown Menu - Responsive width */}
+                  {/* Profile Dropdown Menu */}
                   {showProfileMenu && (
                     <div className="absolute right-0 mt-2 w-52 sm:w-56 bg-white rounded-xl shadow-lg border py-2 z-50 animate-fadeIn">
                       {/* User Info */}
@@ -262,16 +303,9 @@ const Navbar = () => {
                       {/* Menu Items */}
                       <div className="py-2">
                         <Link
-                          to="/profile"
-                          className="flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
-                        >
-                          <User className="w-4 h-4" />
-                          <span>My Profile</span>
-                        </Link>
-                        
-                        <Link
                           to="/orders"
                           className="flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
+                          onClick={() => setShowProfileMenu(false)}
                         >
                           <Package className="w-4 h-4" />
                           <span>My Orders</span>
@@ -280,6 +314,7 @@ const Navbar = () => {
                         <Link
                           to="/wishlist"
                           className="flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors"
+                          onClick={() => setShowProfileMenu(false)}
                         >
                           <Heart className="w-4 h-4" />
                           <span>My Wishlist</span>
@@ -294,6 +329,7 @@ const Navbar = () => {
                           <Link
                             to="/admin"
                             className="flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-gray-700 hover:bg-gray-50 hover:text-black transition-colors border-t mt-2 pt-2"
+                            onClick={() => setShowProfileMenu(false)}
                           >
                             <Shield className="w-4 h-4" />
                             <span>Admin Panel</span>
@@ -308,7 +344,7 @@ const Navbar = () => {
                             logout();
                             setShowProfileMenu(false);
                           }}
-                          className="flex items-center justify-center space-x-2 w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-lg mx-2"
+                          className="flex items-center justify-center space-x-2 w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors rounded-lg cursor-pointer"
                         >
                           <LogOut className="w-4 h-4" />
                           <span className="font-medium">Logout</span>
@@ -318,7 +354,7 @@ const Navbar = () => {
                   )}
                 </div>
               ) : (
-                // Login Button for non-authenticated users - Responsive
+                // Login Button for non-authenticated users
                 <Link
                   to="/login"
                   className="hidden sm:flex items-center space-x-1 sm:space-x-2 px-3 sm:px-5 py-1.5 sm:py-2 bg-gradient-to-r from-black to-gray-800 text-white rounded-lg hover:from-gray-800 hover:to-black transition-all duration-300 shadow-md hover:shadow-lg text-sm"
@@ -328,7 +364,7 @@ const Navbar = () => {
                 </Link>
               )}
 
-              {/* Mobile Menu Toggle - Always visible on mobile */}
+              {/* Mobile Menu Toggle */}
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="md:hidden p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 transition-colors"
@@ -344,8 +380,8 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* Mobile Menu - Responsive width */}
-      <div className={`fixed inset-0 z-40 md:hidden transition-transform duration-300 ${
+      {/* Mobile Menu */}
+      <div className={`fixed inset-0 z-50 md:hidden transition-transform duration-300 ${
         isMenuOpen ? 'translate-x-0' : 'translate-x-full'
       }`}>
         {/* Overlay */}
@@ -356,9 +392,9 @@ const Navbar = () => {
           onClick={() => setIsMenuOpen(false)}
         />
 
-        {/* Menu Panel - Responsive width */}
+        {/* Menu Panel */}
         <div className="absolute right-0 top-0 h-full w-[85vw] sm:w-80 max-w-sm bg-white shadow-xl overflow-y-auto">
-          {/* Menu Header - Responsive padding */}
+          {/* Menu Header */}
           <div className="flex items-center justify-between p-4 sm:p-6 border-b">
             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
               {currentUser && photoURL ? (
@@ -391,32 +427,57 @@ const Navbar = () => {
             </button>
           </div>
 
-          {/* Mobile Navigation Links - Responsive padding */}
+          {/* Mobile Navigation Links */}
           <div className="p-3 sm:p-4">
             {navLinks.map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-lg mb-1 transition-colors text-sm sm:text-base ${
-                  location.pathname === link.path
-                    ? 'bg-black text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <div className={`p-1.5 sm:p-2 rounded-lg ${
-                  location.pathname === link.path 
-                    ? 'bg-white/20' 
-                    : 'bg-gray-100'
-                }`}>
-                  {link.icon}
-                </div>
-                <span className="font-medium">{link.label}</span>
-              </Link>
+              <div key={link.path}>
+                {link.protected && !currentUser ? (
+                  <button
+                    onClick={(e) => {
+                      setIsMenuOpen(false);
+                      handleProtectedRouteClick(e, link.path);
+                    }}
+                    className={`flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-lg mb-1 transition-colors text-sm sm:text-base w-full text-left ${
+                      location.pathname === link.path
+                        ? 'bg-gray-100 text-gray-700'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className={`p-1.5 sm:p-2 rounded-lg ${
+                      location.pathname === link.path 
+                        ? 'bg-gray-200' 
+                        : 'bg-gray-100'
+                    }`}>
+                      {link.icon}
+                    </div>
+                    <span className="font-medium">{link.label}</span>
+                    <Lock className="w-3 h-3 ml-auto text-gray-400" />
+                  </button>
+                ) : (
+                  <Link
+                    to={link.path}
+                    className={`flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-lg mb-1 transition-colors text-sm sm:text-base ${
+                      location.pathname === link.path
+                        ? 'bg-black text-white'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <div className={`p-1.5 sm:p-2 rounded-lg ${
+                      location.pathname === link.path 
+                        ? 'bg-white/20' 
+                        : 'bg-gray-100'
+                    }`}>
+                      {link.icon}
+                    </div>
+                    <span className="font-medium">{link.label}</span>
+                  </Link>
+                )}
+              </div>
             ))}
             
             {/* Mobile Wishlist Link */}
-            {currentUser && (
+            {currentUser ? (
               <Link
                 to="/wishlist"
                 className={`flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-lg mb-1 transition-colors text-sm sm:text-base ${
@@ -440,6 +501,20 @@ const Navbar = () => {
                   </span>
                 )}
               </Link>
+            ) : (
+              <button
+                onClick={(e) => {
+                  setIsMenuOpen(false);
+                  handleProtectedRouteClick(e, '/wishlist');
+                }}
+                className="flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-lg mb-1 transition-colors text-sm sm:text-base w-full text-left text-gray-700 hover:bg-gray-100"
+              >
+                <div className="p-1.5 sm:p-2 rounded-lg bg-gray-100">
+                  <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <span className="font-medium">My Wishlist</span>
+                <Lock className="w-3 h-3 ml-auto text-gray-400" />
+              </button>
             )}
             
             {/* Mobile Cart Link */}
@@ -467,41 +542,12 @@ const Navbar = () => {
               )}
             </Link>
 
-            {/* My Orders Link (Mobile) */}
-            {currentUser && (
-              <Link
-                to="/orders"
-                className={`flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-3 sm:py-3.5 rounded-lg mb-1 transition-colors text-sm sm:text-base ${
-                  location.pathname === '/orders'
-                    ? 'bg-purple-50 text-purple-700'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <div className={`p-1.5 sm:p-2 rounded-lg ${
-                  location.pathname === '/orders'
-                    ? 'bg-purple-100'
-                    : 'bg-gray-100'
-                }`}>
-                  <Package className="w-4 h-4 sm:w-5 sm:h-5" />
-                </div>
-                <span className="font-medium">My Orders</span>
-              </Link>
-            )}
           </div>
 
-          {/* Mobile Auth Section - Responsive padding */}
+          {/* Mobile Auth Section */}
           <div className="absolute bottom-0 left-0 right-0 border-t p-4 sm:p-6 bg-white">
             {currentUser ? (
               <div className="space-y-2 sm:space-y-3">
-                <Link
-                  to="/profile"
-                  className="flex items-center justify-center space-x-2 px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm sm:text-base"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  <User className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>My Profile</span>
-                </Link>
                 <button
                   onClick={() => {
                     logout();
@@ -526,7 +572,96 @@ const Navbar = () => {
           </div>
         </div>
       </div>
+
+      {/* Login Required Modal */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-fadeIn">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center">
+                <Lock className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                Login Required
+              </h3>
+              <p className="text-gray-600">
+                Please login to access your orders and other personalized features
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-blue-50 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-blue-800">
+                      By logging in, you can:
+                    </p>
+                    <ul className="text-sm text-blue-700 mt-2 space-y-1">
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                        View your order history
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                        Track your shipments
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                        Save items to your wishlist
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                        Get personalized recommendations
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+                <button
+                  onClick={handleLoginAndRedirect}
+                  className="flex-1 bg-gradient-to-r from-black to-gray-800 text-white py-3 rounded-lg font-semibold hover:from-gray-800 hover:to-black transition-all flex items-center justify-center gap-2"
+                >
+                  <User className="w-5 h-5" />
+                  Login Now
+                </button>
+                <button
+                  onClick={() => setShowLoginModal(false)}
+                  className="flex-1 border-2 border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-all"
+                >
+                  Continue Browsing
+                </button>
+              </div>
+
+              <p className="text-center text-sm text-gray-500 pt-4">
+                Don't have an account?{" "}
+                <button
+                  onClick={handleLoginAndRedirect}
+                  className="text-blue-600 hover:underline font-medium"
+                >
+                  Sign up for free
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </>
+  );
+};
+
+// Separate CartLink component to handle potential issues
+const CartLink = ({ to, children, title, className }) => {
+  return (
+    <Link 
+      to={to} 
+      className={className}
+      title={title}
+    >
+      {children}
+    </Link>
   );
 };
 

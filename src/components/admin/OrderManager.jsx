@@ -54,7 +54,7 @@ const OrderManager = ({ showAll = true }) => {
       setOrders(response.data);
       setFilteredOrders(response.data);
     } catch (error) {
-      console.error("Failed to fetch orders:", error);
+      // console.error("Failed to fetch orders:", error);
       toast.error("Failed to load orders");
     } finally {
       setLoading(false);
@@ -66,7 +66,7 @@ const OrderManager = ({ showAll = true }) => {
       const response = await api.get("/api/orders/stats");
       setStats(response.data);
     } catch (error) {
-      console.error("Failed to fetch stats:", error);
+      // console.error("Failed to fetch stats:", error);
     }
   };
 
@@ -182,7 +182,7 @@ const OrderManager = ({ showAll = true }) => {
       fetchOrders();
       fetchOrderStats();
     } catch (error) {
-      console.error("Failed to update order:", error);
+      // console.error("Failed to update order:", error);
       toast.error("Failed to update order status");
     }
   };
@@ -196,7 +196,7 @@ const OrderManager = ({ showAll = true }) => {
       fetchOrders();
       fetchOrderStats();
     } catch (error) {
-      console.error("Failed to delete order:", error);
+      // console.error("Failed to delete order:", error);
       toast.error("Failed to delete order");
     }
   };

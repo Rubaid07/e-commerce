@@ -14,7 +14,7 @@ export const CartProvider = ({ children }) => {
       try {
         setItems(JSON.parse(savedCart));
       } catch (e) {
-        console.error('Failed to parse cart:', e);
+        // console.error('Failed to parse cart:', e);
       }
     }
     setLoading(false);
@@ -86,7 +86,7 @@ export const CartProvider = ({ children }) => {
       updateQuantity,
       clearCart,
       cartTotal,
-      itemCount // ← Export itemCount
+      itemCount
     }}>
       {children}
     </CartContext.Provider>

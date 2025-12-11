@@ -1,9 +1,9 @@
-// src/pages/ProductDetails.jsx
+// src/pages/ProductDetails.jsx - FIXED VERSION
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router";
 import axios from "axios";
 import { useCart } from "../context/CartContext";
-import { useAuth } from "../hooks/useAuth"; // ← ADD THIS IMPORT
+import { useAuth } from "../hooks/useAuth";
 import toast, { Toaster } from "react-hot-toast";
 import ProductSkeleton from "../components/ProductSkeleton";
 import {
@@ -24,13 +24,12 @@ import {
   TrendingUp,
   RefreshCw
 } from "lucide-react";
-import { triggerWishlistUpdate } from "../hooks/useWishlistCount";
 
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const { currentUser, token } = useAuth(); // ← ADD THIS
+  const { currentUser, token } = useAuth();
 
   const [product, setProduct] = useState(null);
   const [qty, setQty] = useState(1);
@@ -38,10 +37,13 @@ const ProductDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
+  
+  // Wishlist states
+  const [isWishlisted, setIsWishlisted] = useState(false);
   const [wishlistItemId, setWishlistItemId] = useState(null);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   const totalPrice = (product ? Number(product.price) : 0) * qty;
   const discountPrice = product?.discount
@@ -49,10 +51,9 @@ const ProductDetails = () => {
     : null;
 
   const sizes = ["XS", "S", "M", "L", "XL", "XXL"];
-  const productImages = product?.images || [
-    product?.image
-  ];
+  const productImages = product?.images || [product?.image || "https://via.placeholder.com/600"];
 
+  // Fetch product data
   useEffect(() => {
     const fetchProduct = async () => {
       setLoading(true);
@@ -66,7 +67,7 @@ const ProductDetails = () => {
           fetchRelatedProducts(res.data.category, id);
         }
       } catch (err) {
-        console.error("Failed to load product:", err);
+        // console.error("Failed to load product:", err);
         setError("Failed to load product details");
         toast.error("Failed to load product");
       } finally {
@@ -77,6 +78,52 @@ const ProductDetails = () => {
     fetchProduct();
   }, [id]);
 
+  // CHECK WISHLIST STATUS - SINGLE SOURCE OF TRUTH
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      // If no user or token, set to false
+      if (!currentUser || !token) {
+        // console.log("No user or token, wishlist false");
+        setIsWishlisted(false);
+        setWishlistItemId(null);
+        return;
+      }
+
+      // If no product yet, wait
+      if (!product || !product._id) {
+        // console.log("No product yet, waiting");
+        return;
+      }
+
+      try {
+        // console.log("Checking wishlist for product:", product._id);
+        
+        const response = await axios.get(
+          `http://localhost:5000/api/wishlist/check/${product._id}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        // console.log("Wishlist check result:", response.data);
+        
+        // Update state based on API response
+        setIsWishlisted(response.data.exists);
+        setWishlistItemId(response.data.itemId);
+        
+      } catch (error) {
+        // console.error("Error checking wishlist:", error.response?.status, error.response?.data);
+        setIsWishlisted(false);
+        setWishlistItemId(null);
+      }
+    };
+
+    checkWishlistStatus();
+  }, [product?._id, currentUser, token]);
+
   const fetchRelatedProducts = async (category, excludeId) => {
     setRelatedLoading(true);
     try {
@@ -84,44 +131,11 @@ const ProductDetails = () => {
       const filtered = res.data.filter(p => p._id !== excludeId).slice(0, 4);
       setRelatedProducts(filtered);
     } catch (err) {
-      console.error("Failed to fetch related products:", err);
+      // console.error("Failed to fetch related products:", err);
     } finally {
       setRelatedLoading(false);
     }
   };
-
-  // Check if product is in wishlist on load
-  useEffect(() => {
-    const checkWishlist = async () => {
-      if (currentUser && product) {
-        try {
-          const response = await axios.get(
-            `http://localhost:5000/api/wishlist/check/${product._id}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`
-              }
-            }
-          );
-          console.log("Wishlist check response:", response.data);
-          if (response.data.exists) {
-            setIsWishlisted(true);
-            setWishlistItemId(response.data.itemId);
-          }
-        } catch (error) {
-          console.error("Failed to check wishlist:", error);
-          // Check if the error is due to missing wishlist collection
-          if (error.response?.data?.message?.includes('wishlist')) {
-            console.log("Wishlist collection might not exist yet");
-          }
-        }
-      }
-    };
-
-    if (product) {
-      checkWishlist();
-    }
-  }, [currentUser, product, token]);
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -151,96 +165,90 @@ const ProductDetails = () => {
     setTimeout(() => navigate("/checkout"), 500);
   };
 
+  // WISHLIST TOGGLE
   const toggleWishlist = async () => {
-  if (!currentUser) {
-    toast.error("Please login to add to wishlist");
-    navigate("/login");
-    return;
-  }
+    // Check login
+    if (!currentUser || !token) {
+      toast.error("Please login to add to wishlist");
+      navigate("/login");
+      return;
+    }
 
-  if (!product) return;
+    // Check if product loaded
+    if (!product || !product._id) {
+      return;
+    }
 
-  try {
-    if (isWishlisted) {
-      // Remove from wishlist
-      await axios.delete(`http://localhost:5000/api/wishlist/${wishlistItemId}`, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      setIsWishlisted(false);
-      setWishlistItemId(null);
-      toast.success("Removed from wishlist");
-    } else {
-      // Add to wishlist
-      const response = await axios.post(
-        "http://localhost:5000/api/wishlist",
-        { productId: product._id },
-        { 
+    // Prevent multiple clicks
+    if (wishlistLoading) {
+      return;
+    }
+
+    setWishlistLoading(true);
+
+    try {
+      if (isWishlisted) {
+        // REMOVE FROM WISHLIST
+
+        // console.log("Removing from wishlist, itemId:", wishlistItemId);
+        
+        await axios.delete(`http://localhost:5000/api/wishlist/${wishlistItemId}`, {
           headers: { 
-            Authorization: `Bearer ${token}`,
+            'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
-          } 
-        }
-      );
-      setIsWishlisted(true);
-      setWishlistItemId(response.data._id);
-      toast.success("Added to wishlist!");
+          }
+        });
+        
+        setIsWishlisted(false);
+        setWishlistItemId(null);
+        toast.success("Removed from wishlist");
+        
+      } else {
+        // ADD TO WISHLIST
+        
+        // console.log("Adding to wishlist, productId:", product._id);
+        
+        const response = await axios.post(
+          "http://localhost:5000/api/wishlist",
+          { productId: product._id },
+          { 
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            } 
+          }
+        );
+        
+        
+        setIsWishlisted(true);
+        setWishlistItemId(response.data._id);
+        toast.success("Added to wishlist!");
+      }
+      
+    } catch (error) {
+      // console.error("Wishlist error:", error);
+      toast.error(error.response?.data?.message || "Failed to update wishlist");
+      
+      // Re-check from server
+      try {
+        const response = await axios.get(
+          `http://localhost:5000/api/wishlist/check/${product._id}`,
+          { 
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            } 
+          }
+        );
+        setIsWishlisted(response.data.exists);
+        setWishlistItemId(response.data.itemId);
+      } catch (err) {
+        // console.error("Failed to re-check:", err);
+      }
+    } finally {
+      setWishlistLoading(false);
     }
-    
-    // **CRITICAL: Update localStorage immediately**
-    const wishlistKey = `wishlist_${currentUser.email}`;
-    const currentWishlist = JSON.parse(localStorage.getItem(wishlistKey) || "[]");
-    
-    if (isWishlisted) {
-      // Remove from localStorage
-      const updatedWishlist = currentWishlist.filter(item => item.productId !== product._id);
-      localStorage.setItem(wishlistKey, JSON.stringify(updatedWishlist));
-    } else {
-      // Add to localStorage
-      const newItem = {
-        productId: product._id,
-        name: product.name,
-        price: product.price,
-        image: product.image,
-        addedAt: new Date().toISOString()
-      };
-      const updatedWishlist = [...currentWishlist, newItem];
-      localStorage.setItem(wishlistKey, JSON.stringify(updatedWishlist));
-    }
-    
-    // **Trigger multiple update mechanisms**
-    
-    // 1. Trigger WishlistManager update
-    triggerWishlistUpdate();
-    
-    // 2. Dispatch custom event
-    const event = new CustomEvent('wishlistChanged', {
-      detail: { productId: product._id, action: isWishlisted ? 'remove' : 'add' }
-    });
-    window.dispatchEvent(event);
-    
-    // 3. Trigger storage event
-    const storageEvent = new StorageEvent('storage', {
-      key: wishlistKey,
-      oldValue: JSON.stringify(currentWishlist),
-      newValue: localStorage.getItem(wishlistKey),
-      url: window.location.href,
-      storageArea: localStorage
-    });
-    window.dispatchEvent(storageEvent);
-    
-    // 4. Force state update in Navbar
-    if (window.updateNavbarWishlist) {
-      window.updateNavbarWishlist();
-    }
-    
-  } catch (error) {
-    console.error("Wishlist error:", error);
-    toast.error(error.response?.data?.message || "Failed to update wishlist");
-  }
-};
+  };
 
   const handleShare = () => {
     if (navigator.share) {
@@ -354,6 +362,10 @@ const ProductDetails = () => {
                 src={productImages[selectedImage]}
                 alt={product.name}
                 className="w-full h-[500px] object-contain rounded-lg"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "https://via.placeholder.com/600x600?text=Product+Image";
+                }}
               />
             </div>
 
@@ -363,15 +375,20 @@ const ProductDetails = () => {
                 <button
                   key={idx}
                   onClick={() => setSelectedImage(idx)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${selectedImage === idx
+                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                    selectedImage === idx
                       ? "border-black ring-2 ring-black/20"
                       : "border-gray-200 hover:border-gray-400"
-                    }`}
+                  }`}
                 >
                   <img
-                    src={img}
+                    src={img || "https://via.placeholder.com/80x80?text=Thumbnail"}
                     alt={`${product.name} view ${idx + 1}`}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://via.placeholder.com/80x80?text=Thumbnail";
+                    }}
                   />
                 </button>
               ))}
@@ -381,15 +398,22 @@ const ProductDetails = () => {
             <div className="flex items-center gap-4 bg-white rounded-xl p-4 shadow-sm">
               <button
                 onClick={toggleWishlist}
-                disabled={!product}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition disabled:opacity-50 ${isWishlisted
+                disabled={wishlistLoading}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+                  wishlistLoading ? 'opacity-70 cursor-wait' : ''
+                } ${
+                  isWishlisted
                     ? "bg-red-50 text-red-600 border border-red-200"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
+                }`}
               >
-                <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
+                {wishlistLoading ? (
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
+                )}
                 <span className="hidden sm:inline">
-                  {isWishlisted ? "Wishlisted" : "Wishlist"}
+                  {isWishlisted ? "Wishlisted" : "Add to Wishlist"}
                 </span>
               </button>
 
@@ -416,21 +440,23 @@ const ProductDetails = () => {
                 <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
                   {product.category || "Fashion"}
                 </span>
-               {Array.isArray(product.tags) && product.tags.map(tag => (
-  <span key={tag} className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs">
-    {tag}
-  </span>
-))}
+                {Array.isArray(product.tags) &&
+                  product.tags.map((tag) => (
+                    <span key={tag} className="px-2 py-1 bg-blue-50 text-blue-600 rounded text-xs">
+                      {tag}
+                    </span>
+                  ))}
               </div>
 
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <Star
                     key={star}
-                    className={`w-4 h-4 ${star <= Math.floor(product.rating || 4)
+                    className={`w-4 h-4 ${
+                      star <= Math.floor(product.rating || 4)
                         ? "text-yellow-500 fill-current"
                         : "text-gray-300"
-                      }`}
+                    }`}
                   />
                 ))}
                 <span className="text-sm text-gray-600 ml-1">
@@ -464,8 +490,10 @@ const ProductDetails = () => {
               </div>
 
               <p className="text-sm text-gray-600">
-                Total for {qty} item{qty > 1 ? 's' : ''}:
-                <span className="font-semibold text-black ml-2">${totalPrice.toFixed(2)}</span>
+                Total for {qty} item{qty > 1 ? "s" : ""}:
+                <span className="font-semibold text-black ml-2">
+                  ${totalPrice.toFixed(2)}
+                </span>
               </p>
             </div>
 
@@ -473,7 +501,8 @@ const ProductDetails = () => {
             <div className="space-y-3">
               <h3 className="font-semibold text-lg">Description</h3>
               <p className="text-gray-600 leading-relaxed">
-                {product.description || "Premium quality fabric with modern design. Perfect for everyday wear with exceptional comfort and style."}
+                {product.description ||
+                  "Premium quality fabric with modern design. Perfect for everyday wear with exceptional comfort and style."}
               </p>
 
               {/* Features */}
@@ -517,12 +546,13 @@ const ProductDetails = () => {
                       key={s}
                       onClick={() => isAvailable && setSize(s)}
                       disabled={!isAvailable}
-                      className={`px-4 py-3 rounded-lg border transition-all ${size === s
+                      className={`px-4 py-3 rounded-lg border transition-all ${
+                        size === s
                           ? "bg-black text-white border-black"
                           : isAvailable
-                            ? "border-gray-300 hover:border-black hover:bg-gray-50"
-                            : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                        }`}
+                          ? "border-gray-300 hover:border-black hover:bg-gray-50"
+                          : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                      }`}
                     >
                       {s}
                       {!isAvailable && (
@@ -557,8 +587,11 @@ const ProductDetails = () => {
                 </div>
 
                 <div className="flex-1">
-                  <p className={`text-sm flex items-center gap-2 ${product.inStock ? "text-green-600" : "text-red-600"
-                    }`}>
+                  <p
+                    className={`text-sm flex items-center gap-2 ${
+                      product.inStock ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
                     <CheckCircle className="w-4 h-4" />
                     {product.inStock
                       ? `In Stock • ${product.stock || 50} units available`
@@ -656,6 +689,10 @@ const ProductDetails = () => {
                           src={p.image || `https://picsum.photos/400/400?random=${p._id}`}
                           alt={p.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "https://via.placeholder.com/400x400?text=Product+Image";
+                          }}
                         />
                       </div>
                       <div className="p-4">

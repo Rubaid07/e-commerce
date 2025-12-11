@@ -24,30 +24,32 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
   });
 
   useEffect(() => {
-    if (product) {
-      setFormData({
-        name: product.name || "",
-        price: product.price || "",
-        category: product.category || "",
-        image: product.image || "",
-        description: product.description || "",
-        stock: product.stock || "100",
-        inStock: product.inStock !== false,
-        tags: product.tags ? product.tags.join(", ") : ""
-      });
-    } else {
-      setFormData({
-        name: "",
-        price: "",
-        category: "",
-        image: "",
-        description: "",
-        stock: "100",
-        inStock: true,
-        tags: ""
-      });
-    }
-  }, [product]);
+  if (product) {
+    setFormData({
+      name: product.name || "",
+      price: product.price || "",
+      category: product.category || "",
+      image: product.image || "",
+      description: product.description || "",
+      stock: product.stock || "100",
+      inStock: product.inStock !== false,
+      tags: Array.isArray(product.tags) 
+        ? product.tags.join(", ") 
+        : (typeof product.tags === 'string' ? product.tags : "")
+    });
+  } else {
+    setFormData({
+      name: "",
+      price: "",
+      category: "",
+      image: "",
+      description: "",
+      stock: "100",
+      inStock: true,
+      tags: ""
+    });
+  }
+}, [product]);
 
   const handleSubmit = async (e) => {
   e.preventDefault();
@@ -56,12 +58,15 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
   try {
     const apiData = {
       ...formData,
-      price: parseFloat(formData.price)
+      price: parseFloat(formData.price),
+      tags: formData.tags 
+        ? formData.tags.split(",").map(tag => tag.trim()).filter(tag => tag !== "")
+        : []
     };
 
     const config = {
       headers: { 
-        Authorization: `Bearer ${token}`, // Make sure you have access to token
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     };
@@ -69,7 +74,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
     let response;
     if (product) {
       // Update existing product
-      console.log("Updating product:", product._id, apiData);
+      // console.log("Updating product:", product._id, apiData);
       response = await axios.put(
         `http://localhost:5000/api/products/${product._id}`, 
         apiData, 
@@ -78,7 +83,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
       toast.success("Product updated successfully");
     } else {
       // Create new product
-      console.log("Creating new product:", apiData);
+      // console.log("Creating new product:", apiData);
       response = await axios.post(
         "http://localhost:5000/api/products", 
         apiData, 
@@ -87,7 +92,7 @@ const ProductModal = ({ isOpen, onClose, onSave, product }) => {
       toast.success("Product created successfully");
     }
     
-    console.log("API Response:", response.data);
+    // console.log("API Response:", response.data);
     onSave();
   } catch (error) {
     console.error("Error saving product:", {
