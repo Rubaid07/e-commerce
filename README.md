@@ -78,25 +78,65 @@ axios.post(`${API}/api/wishlist`,
 
 ## 📁 Project Structure
 ```
-src/
-├─ api/               # Axios instances & interceptors
-├─ assets/            # images, icons
-├─ components/        # reusable UI
-├─ hooks/             # useAuth, useCart, useOrders
-├─ pages/
-│  ├─ Home.jsx
-│  ├─ ProductDetail.jsx
-│  ├─ Cart.jsx
-│  ├─ Checkout.jsx
-│  ├─ Wishlist.jsx
-│  └─ Admin/
-│     ├─ Products.jsx
-│     ├─ Orders.jsx
-│     └─ Stats.jsx
-├─ router/            # Route guards (AuthGuard, AdminGuard)
-├─ store/             # Context providers (Cart, Auth)
-├─ utils/             # helpers, constants
-└─ main.jsx           # entry point
+├── node_modules/
+├── public/
+├── src/
+│   ├── assets/
+│   ├── components/
+│   │   ├── admin/
+│   │   │   ├── DashboardStats.jsx
+│   │   │   ├── OrderManager.jsx
+│   │   │   ├── ProductManager.jsx
+│   │   │   ├── ProductModal.jsx
+│   │   │   ├── ProductTable.jsx
+│   │   │   ├── SalesChart.jsx
+│   │   │   └── UserManager.jsx
+│   │   ├── Categories.jsx
+│   │   ├── FeaturedProducts.jsx
+│   │   ├── Footer.jsx
+│   │   ├── Hero.jsx
+│   │   ├── InstagramFeed.jsx
+│   │   ├── Navbar.jsx
+│   │   ├── Newsletter.jsx
+│   │   ├── ProductSkeleton.jsx
+│   │   ├── Testimonials.jsx
+│   │   └── WhyChooseUs.jsx
+│   ├── context/
+│   │   ├── AuthContext.jsx
+│   │   ├── AuthProvider.jsx
+│   │   └── CartContext.jsx
+│   ├── hooks/
+│   │   ├── useAuth.js
+│   │   └── useWishlistCount.js
+│   ├── pages/
+│   │   ├── AdminDashboard.jsx
+│   │   ├── Checkout.jsx
+│   │   ├── Home.jsx
+│   │   ├── Login.jsx
+│   │   ├── Orders.jsx
+│   │   ├── ProductDetails.jsx
+│   │   ├── Shop.jsx
+│   │   ├── Signup.jsx
+│   │   ├── Success.jsx
+│   │   └── Wishlist.jsx
+│   ├── utils/
+│   │   └── wishlistManager.js
+│   ├── App.css
+│   ├── App.jsx
+│   ├── axiosConfig.js
+│   ├── firebase.js
+│   ├── index.css
+│   └── main.jsx
+├── .env
+├── .firebaserc
+├── .gitignore
+├── eslint.config.js
+├── firebase.json
+├── index.html
+├── package-lock.json
+├── package.json
+├── README.md
+└── vite.config.js
 ```
 
 ## 🚀 Deploy to Vercel
